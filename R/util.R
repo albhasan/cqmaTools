@@ -993,8 +993,6 @@ file2df <- function(file.in, header, skip, cnames){
   trajlabel <- NULL; map.ylim <- NULL
   # traj.file.vec <- "/home/lagee/Documents/alber/test/tmp/rba/co/simNoHead/rba_2010_10_27_16_1219.20"
   wgs84 <-  sp::CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
-  HYSPLIT.COLNAMES <- c("V1", "V2", "year", "month", "day", "hour", "min", 
-                        "V8", "V9", "lat", "lon", "height", "pressure") 
   traj.dat.list <- files2df(file.vec = traj.file.vec,                          # read the trajectory files into a list of data.frames 
                              header = FALSE, skip = 0, cnames = HYSPLIT.COLNAMES)
   traj.dat.list <- .listname2data.frame(df.list = traj.dat.list,                # add file name as column

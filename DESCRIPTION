@@ -16,10 +16,8 @@ Imports:
     roxygen2,
     testthat,
     ggplot2,
-    rgdal,
-    rgeos,
     utils,
-    sp,
+    sf,
     stats, 
     fpc,
     log4r
