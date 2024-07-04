@@ -10,28 +10,32 @@
 #' @name files2df
 #' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
 #'
-#' @description Read text files into data.frames (one per file)
+#' @description 
+#' Read text files into data frames (one per file).
 #'
-#' @param file.vec A vector of character. The paths to the input files
-#' @param header   A logical. Do the files have a header row?
-#' @param skip     A numeric. Lines to skip from the top of the file
-#' @param cnames   A vector of character. The column names of the data in the files
-#' @return         A list of data.frames. The list names matches the file names
+#' @param files A character. The paths to the input files.
+#' @param header a logical(1). Do the files have a header row?
+#' @param hs_skip a numeric(1). Number of lines to skip from each files' top.
+#' @param hs_cnames a character. The column names of the data in the files.
+#'
+#' @return a list of data frames. 
+#'
 #' @export
-files2df <- function(file.vec, header, skip, cnames){
+#'
+files2df <- function(files, header, hs_skip, hs_cnames) {
   res <- list()
-  if(length(file.vec) == 0){
+  if(length(files) == 0){
     warning("Empty list")
     return(res)
   }
-  for(i in 1:length(file.vec)){
+  for(i in seq(files)) {
     res[[i]] <- .file2df(
-      file.in = file.vec[i],
-      cnames = cnames, 
+      file.in = files[i],
+      cnames = hs_cnames, 
       header = header, 
-      skip = skip)
+      skip = hs_skip)
   }
-  names(res) <- basename(file.vec)
+  names(res) <- basename(files)
   return(res)
 }
 
@@ -60,24 +64,26 @@ getDataFromProfile <- function(prof.name){
 #' @name get_os
 #' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
 #'
-#' @description Get the operative system's name. Taken from https://www.r-bloggers.com/identifying-the-os-from-r/
+#' @description Get the operative system's name. Taken from 
+#'   https://www.r-bloggers.com/identifying-the-os-from-r/
 #'
-#' @return                   A single string
+#' @return                   A character(1).
+#' 
 #' @export
 get_os <- function(){
-  sysinf <- Sys.info()
-  if (!is.null(sysinf)){
-    os <- sysinf['sysname']
-    if (os == 'Darwin')
-      os <- "osx"
-  } else { ## mystery machine
-    os <- .Platform$OS.type
-    if (grepl("^darwin", R.version$os))
-      os <- "osx"
-    if (grepl("linux-gnu", R.version$os))
-      os <- "linux"
-  }
-  return(tolower(os))
+    sysinf <- Sys.info()
+    if (!is.null(sysinf)){
+        os <- sysinf['sysname']
+        if (os == 'Darwin')
+            os <- "osx"
+    } else { ## mystery machine
+        os <- .Platform$OS.type
+        if (grepl("^darwin", R.version$os))
+            os <- "osx"
+        if (grepl("linux-gnu", R.version$os))
+            os <- "linux"
+    }
+    return(tolower(os))
 }
 
 
@@ -697,21 +703,6 @@ file2df <- function(file.in, header, skip, cnames){
 
 
 
-# Build a SpatialLines object from a trajectory data.frame. Each line is identified by its first row in the data.frame
-#
-# @param traj.dat A data.frame with the trajectory. It uses the format of Hysplit output files
-# @param crs      A CRS object. It is the coordinate reference system of the data
-# @return         A SpatialLines object.
-.traj2spLines <- function(traj.dat, crs){
-  Lines.list <- list()
-  for (i in 2:nrow(traj.dat)){
-    l <- sp::Line(rbind(traj.dat[i - 1,][c("lon", "lat")], 
-                        traj.dat[i,][c("lon", "lat")]))
-    Lines.list[[i - 1]] <- sp::Lines(l, as.character(i - 1))
-  }
-  return(sp::SpatialLines(Lines.list, proj4string = crs))
-}
-
 
 
 
@@ -984,11 +975,23 @@ file2df <- function(file.in, header, skip, cnames){
 
 
 
-# Plot a set of trajectories
-#
-# @param traj.file.vec A vector of character. The paths to the trajectory files
-# @return A ggplot object
+#' @title Plot a set of trajectories
+#'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#'
+#' This function has been deprecated because it relies on the `sp` package.
+#'
+#' Plot the trajectories in the input files.
+#'
+#' @param traj.file.vec A vector of character. Paths to trajectory files.
+#'
+#' @return A ggplot object
+#'
 .plotTrajs <- function(traj.file.vec){
+
+  lifecycle::deprecate_warn("0.2.0", ".plotTrajs()", "plot_trajectories()")
+
   long <- NULL; lon <- NULL; lat <- NULL; group <- NULL; map.xlim <- NULL; 
   trajlabel <- NULL; map.ylim <- NULL
   # traj.file.vec <- "/home/lagee/Documents/alber/test/tmp/rba/co/simNoHead/rba_2010_10_27_16_1219.20"

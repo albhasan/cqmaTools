@@ -1,135 +1,37 @@
-#' @title Build a vector from the origin to both the min and max values
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
+#' @title Plot the area of influence
+#' @name plot_aoi
+#' @author Alber Sánchez, \email{alber.ipia@@inpe.br}
 #'
-#' @description Build a vector from the minimum to the maximum value ensuring
-#' that origin is a value in the returned vector.
-#'
-#' @param o A numeric. The origin.
-#' @param min A numeric. The mininum value.
-#' @param max A numeric. The maximum value.
-#'
-#' @return    A numeric.
-#'
-.grid_helper <- function(o, min, max, res) {
-  sort(c(seq(from = o, to = max, by = res), 
-         seq(from = o, to = min, by = -res)[-1]))
-}
-
-
-
-#' @title Build a grid
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
-#'
-#' @description Build a grid that includes the given origin as a vertex.
-#'
-#' @param origin_lon A numeric. Coordinate of the origin.
-#' @param origin_lat A numeric. Coordinate of the origin.
+#' @description Plot the given raster with a background of countries.
+#' 
+#' @param aoi_r A raster (terra).
+#' @param nbreaks An integer. The number of breaks to use in the color scale.
+#' @param breaks An integer. Value intervals for the breaks.
+#' @param add_cv Should we add the convex hull of the area of influence?
 #' @param min_lon  A numeric. Grid's mininum longitude value.
 #' @param max_lon  A numeric. Grid's maximum longitude value.
 #' @param min_lat  A numeric. Grid's mininum latitude value.
 #' @param max_lat  A numeric. Grid's maximum latitude value.
-#' @param grid_resolution A numeric. Grid's resolution.
-#' @param crs A numeric. Coordinate reference system (EPSG).
+#' @param plot_title Title for the plot.
 #'
-#' @return value An sf object (polygon).
-#'
+#' @return The given raster.
+#' 
 #' @export
 #'
-build_grid <- function(origin_x, origin_y, min_lon, max_lon, min_lat, 
-                       max_lat, grid_resolution, crs) {
-
-  lon_grid <- .grid_helper(o = origin_x, min = min_lon, max = max_lon,
-                           res = grid_resolution)
-  lat_grid <- .grid_helper(o = origin_y, min = min_lat, max = max_lat,
-                           res = grid_resolution)
-  aoi_grid <-
-    sf::st_as_sf(sf::st_make_grid(
-      x = sf::st_bbox(c(xmin = min(lon_grid), xmax = max(lon_grid),
-                        ymin = min(lat_grid), ymax = max(lat_grid)),
-                      crs = sf::st_crs(crs)),
-      cellsize = grid_resolution
-    ))
-  aoi_grid["gid"] <- seq(nrow(aoi_grid))
-  return(aoi_grid)
-}
-
-
-
-#' @title Aggregate trajectory points using a grid
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
-#'
-#' @description Compute the number of trajectory vertices for each cell in the
-#' grid.
-#'
-#' @param files A character. Paths to trajectory files (i.e. HYSPLIT files).
-#' @param hs_skip A numeric. Number of lines to skip from each file.
-#' @param hs_cnames A character. Names of the columns in each file.
-#' @param hs_clon A character. Name of the longitude column in the files.
-#' @param hs_clat A character. Name of the latitude column in the files.
-#' @param crs A numeric. EPSG code used for both the grid and the trajectories.
-#' @param min_lon  A numeric. Grid's mininum longitude value.
-#' @param max_lon  A numeric. Grid's maximum longitude value.
-#' @param min_lat  A numeric. Grid's mininum latitude value.
-#' @param max_lat  A numeric. Grid's maximum latitude value.
-#' @param grid_resolution A numeric. Grid's resolution.
-#'
-#' @return An terra object (raster). The raster values correspond to the number
-#' of trajectory vertices in each cell.
-#'
-#' @export
-#'
-compute_frequency_grid <- function(files, hs_skip = 7,
-                                   hs_cnames = HYSPLIT.COLNAMES,
-                                   hs_clon = "lon", hs_clat = "lat",
-                                   crs = 4326,
-                                   min_lon = -80, max_lon = -30, 
-                                   min_lat = -40, max_lat = 10,
-                                   grid_resolution = 2) {
-
-  # Read trajectory files into a dataframe.
-  hysplit_df <-
-    do.call(
-      rbind,
-      cqmaTools::files2df(
-        file.vec = files,
-        header = FALSE,
-        skip = hs_skip,
-        cnames = hs_cnames
-      )
-    )
-
-  # Build a grid. NOTE: Assume the first vertex is the grid's origin.
-  aoi_grid <- build_grid(origin_x = hysplit_df[1, hs_clon],
-                         origin_y = hysplit_df[1, hs_clat],
-                         min_lon, max_lon, min_lat, 
-                         max_lat, grid_resolution, crs = crs)
-
-  # Build a sf object (point) using the trajectories' vertices.
-  hysplit_sf <-
-    sf::st_as_sf(x = hysplit_df, coords = c(hs_clon, hs_clat), crs = crs)
-
-  # Cross the grid and trajetories' vertices.
-  # NOTE: s2 is slow at running st_intersection.
-  suppressMessages({
-    s2 <- sf::sf_use_s2()
-    sf::sf_use_s2(FALSE)
-    hysplit_sf <- sf::st_intersection(x = hysplit_sf, y = aoi_grid)
-    sf::sf_use_s2(s2)
-  })
-  grid_traj_freq <-
-    as.data.frame(table(
-      sf::st_drop_geometry(hysplit_sf)[["gid"]]
-    ))
-  colnames(grid_traj_freq) <- c("gid", "freq")
-  aoi_grid <- merge(x = aoi_grid, y = grid_traj_freq, by = "gid", all.x = TRUE)
-
-  # Cast vector grid to raster.
-  template <- terra::rast(terra::vect(aoi_grid), resolution = grid_resolution)
-  aoi_grid_r <- terra::rasterize(terra::vect(aoi_grid), 
-                                 y = template, 
-                                 field = "freq")
-
-  return(aoi_grid_r)
+plot_aoi <- function(aoi_r, nbreaks = 5, breaks = NA, add_cv = FALSE, 
+                     min_lon, max_lon, min_lat, max_lat, 
+                     plot_title = "Influence area") {
+  if (is.na(breaks)) {
+    v_range <- range(aoi_r[], na.rm = TRUE)
+    breaks <- seq(from = v_range[1], to = v_range[2], length.out = nbreaks + 1)
+  }
+  plot(aoi_r, col = rev(heat.colors(nbreaks)),
+       breaks = breaks, main = plot_title)
+  if (add_cv)
+      lines(cv_sf, col = "red")
+  maps::map("world", xlim = c(min_lon, max_lon),
+            ylim = c(min_lat, max_lat), add = TRUE)
+  invisible(aoi_r)
 }
 
 
@@ -164,7 +66,7 @@ compute_influence_area <- function(files, hs_skip = 7,
                                    min_lon = -80, max_lon = -30, 
                                    min_lat = -40, max_lat = 10, 
                                    grid_resolution = 2, 
-                                   plot_aoi = TRUE, 
+                                   plot_area = TRUE, 
                                    plot_title = "Area of Influence") {
 
   # Compute the number of trajectory vertices in each cell in the grid. 
@@ -175,31 +77,21 @@ compute_influence_area <- function(files, hs_skip = 7,
                            max_lat = max_lat,
                            grid_resolution = grid_resolution)
 
-  # Filter
-  aoi_grid_r <- terra::mask(aoi_grid_r, mask = aoi_grid_r >= 5.5)
-
-  # Remove cells with certain NA neighbors.
-  nacount <- terra::focal(x = aoi_grid_r < 0, w = 3, fun = "sum")
-  aoi_grid_r <- terra::mask(aoi_grid_r, mask = nacount < 7)
-
   # Compute the logarithm.
   aoi_grid_r <- log(aoi_grid_r)
 
+  # Filter
+  aoi_grid_r <- terra::mask(aoi_grid_r, mask = aoi_grid_r >= 5.5)
+
   # Build a convex hull.
-  aoi_xy <- sf::st_coordinates(sf::st_as_sf(terra::as.points(aoi_grid_r)))
-  chrows <- grDevices::chull(x = aoi_xy[,"X"], y = aoi_xy[,"Y"])
-  chrows <- c(chrows, chrows[1])
+  cv_sf <- raster2convexhull(aoi_grid_r)
 
-  if (plot_aoi) {
-    nbreaks <- 10
-    intBreaks <- seq(2, 8, length.out = nbreaks)
-    plot(aoi_grid_r, col = rev(heat.colors(nbreaks)),
-         breaks = intBreaks, main = plot_title)
-    lines(aoi_xy[chrows,], col = "red")
-    maps::map("world", xlim = c(min_lon, max_lon),
-              ylim = c(min_lat, max_lat), add = TRUE)
-  }
+  # Plot.
+  if (plot_area)
+    plot_aoi(aoi_grid_r, nbreaks = 5, breaks = NA, add_cv = FALSE, 
+             min_lon = min_lon, max_lon = max_lon, 
+             min_lat = min_lat, max_lat = max_lat,
+             plot_title = "Influence area")
 
-  return(aoi_xy[chrows,])
+  invisible(cv_sf)
 }
-

@@ -101,52 +101,55 @@ splitRawdata <- function(file.in, path.out, colname, keepFlags, cnames,
 
 
 
-
 #' @title Intersect trajectories 
 #' @name intersectTraj
 #' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
 #'
-#' @description Find trajectories' first point beyond the limit (e.g. over the sea).
+#' @description 
+#' `r lifecycle::badge("deprecated")`
+#'
+#' This function has been deprecated because it relies on the `sp` package.
+#'
+#' Find trajectories' first point beyond the limit (e.g. over the
+#' sea).
 #'
 #' @param file.vec A character vector. The paths to the input files
-#' @param limit.in A SpatialLinesDataFrame object which is used to intersect the trajectories.
-#' @param cnames   A character vector. The name of the columns of the raw data file (hysplit)
-#' @param srs      A length-1 character. The spatial reference system
-#' @return         A list made of a character vector and a list. The character vector is the path to each trajectory file. The list contains the first row in the trajectory file which lies over the sea
+#' @param limit.in A SpatialLinesDataFrame object which is used to intersect
+#' the trajectories.
+#' @param cnames A character vector. The name of the columns of the raw data
+#' file (hysplit)
+#' @param srs A length-1 integer. EPSG code of a spatial reference system.
+#' @param hs_skip A length-1 integer. Number of lines to skip from trajectory
+#' files.
+#'
+#' @return         A list made of a character vector and a list. The character
+#' vector is the path to each trajectory file. The list contains the first row
+#' in the trajectory file which lies over the sea
+#'
 #' @export
-intersectTraj <- function(file.vec, limit.in, cnames, srs){
-  #cnames <- HYSPLIT.COLNAMES                                                    # column names of the input file  
-  #srs <-  sp::CRS(SPATIAL.REFERENCE.SYSTEM)
-  
+#'
+intersectTraj <- function(file.vec, limit.in, cnames, srs, hs_skip = 0){
+
+  lifecycle::deprecate_warn("0.2.0", "intersectTraj()",
+    "intersect_trajectories()")
+
   intersect.dat <- list()
   if(length(file.vec) == 0){
     warning("No input files!")
     return(list(file.vec, intersect.dat))
   }
-  traj.dat.list <- files2df(file.vec = file.vec, header = FALSE, 
-                             skip = 0, cnames = cnames)
-  traj.spl.list <- parallel::mclapply(traj.dat.list, .traj2spLines, crs = sp::CRS(srs))  # get SpatialLines from trajectories
-  traj.intersect.list <- parallel::mclapply(traj.spl.list, 
-                                            cqmaTools::intersectTraj.intersect, 
-                                            g1 = limit.in, 
-                                            byid = c(FALSE, TRUE))              # intersetion of trajectories with the limit
-  traj.rowid.list <- parallel::mclapply(traj.intersect.list,                    # row id so the initial point of the intersection line in the trajectory
-                                        function(x){
-                                          if(is.null(x)){return(NULL)};
-                                          return(as.numeric(
-                                            rownames(methods::slot(x, "coords"))[1]))
-                                        }) 
-  # get the data from the intersection
-  intersect.dat <- parallel::mclapply(1:length(traj.dat.list),
-                                      function(x, traj.list, rowid.list){
-                                        if(is.null(rowid.list[[x]])){return(NULL)}; 
-                                        return(
-                                          traj.list[[x]][as.numeric(rowid.list[[x]]) + 1, ]
-                                        )
-                                      } ,                                         # return the next id after the intersection. This corresponds to the line's point falling beyond the limit (on the sea)
-                                      traj.list = traj.dat.list, 
-                                      rowid.list = traj.rowid.list)
-  return(list(file.vec, intersect.dat))
+
+  traj.dat.list <- 
+    files2df(files = file.vec, header = FALSE,
+             hs_skip = hs_skip, hs_cnames = cnames)
+
+  row_id <- 
+    intersect_trajectories(traj_ls = traj.dat.list, limit = limit.in,
+                           hs_skip = hs_skip, crs = srs)
+  row_id <- ifelse(row_id > 0, row_id + 1, 0)
+
+  return(list(file.vec, row_id))
+
 }
 
 

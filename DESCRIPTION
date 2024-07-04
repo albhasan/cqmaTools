@@ -1,7 +1,7 @@
 Package: cqmaTools
 Type: Package
 Title: Tools for managing the data flow at the INPE's CQMA
-Version: 0.2
+Version: 0.3
 Date: 2016-09-06
 Author: Alber Sanchez
 Maintainer: Alber Sanchez <albhasan@gmail.com>
@@ -22,4 +22,7 @@ Imports:
     fpc,
     log4r
 License: MIT + file LICENSE
-RoxygenNote: 6.1.1
+RoxygenNote: 7.3.2
+roxygen2 requires Encoding: "UTF-8"
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
