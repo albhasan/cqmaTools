@@ -65,65 +65,124 @@ build_grid <- function(origin_x, origin_y, min_lon, max_lon, min_lat,
 #' @param files a character. Paths to trajectory files (i.e. HYSPLIT files).
 #' @param hs_skip a numeric. Number of lines to skip from each file.
 #' @param hs_cnames a character. Names of the columns in each file.
-#' @param hs_clon,hs_clat a character. Names of the longitude and latitude 
-#'   columns in the files.
+#' @param hs_clon,hs_clat,hs_cheight a character. Names of the longitude,
+#'   latitude, and height columns in `hs_cnames` 
 #' @param crs a numeric. EPSG code used for both the grid and the trajectories.
-#' @param min_lon,max_lon a numeric. Grid's mininum and maximum longitude
-#'   values.
-#' @param min_lat,max_lat  a numeric(1). Grid's mininum and maximum latitude
-#'   values.
+#' @param min_lon,max_lon,min_lat,max_lat a numeric(1). Grid's mininum and 
+#'   maximum values for longitude and latitude.
 #' @param grid_resolution A numeric. Grid's resolution.
-#' @param traj_min_height,traj_max_height a numeric(1). Remove trajectories 
-#'   which, at some vertex, fall ouside this range.
-#' @param vert_min_height,ver_max_height Remove vertices from trajectories
-#'   falling outsize this range.
+
+#' @param traj_min_lon,traj_max_lon,traj_min_lat,traj_max_lattraj_min_height,traj_max_height a numeric(1). Remove trajectories which, at some vertex, fall ouside this ranges.
+#' @param vert_min_lon,vert_max_lon,vert_min_lat,vert_max_lat,vert_min_height,vert_max_height a numeric(1). Remove vertices from trajectories falling outsize this ranges.
 #'
-#' @return an terra object. The raster values correspond to the number of 
+#' @return a terra object. The raster values correspond to the number of
 #'   trajectory vertices in each cell.
 #'
 #' @export
 #'
 compute_frequency_grid <- function(files, hs_skip = 7,
                                    hs_cnames = HYSPLIT.COLNAMES,
-                                   hs_clon = "lon", hs_clat = "lat",
+                                   hs_clon = "lon",
+                                   hs_clat = "lat",
+                                   hs_cheight = "height",
                                    crs = 4326,
-                                   min_lon = -80, max_lon = -30, 
-                                   min_lat = -40, max_lat = 10,
+                                   min_lon = -80, 
+                                   max_lon = -30, 
+                                   min_lat = -40, 
+                                   max_lat = 10,
                                    grid_resolution = 2, 
+                                   traj_min_lon = -Inf, 
+                                   traj_max_lon = Inf,
+                                   traj_min_lat = -Inf, 
+                                   traj_max_lat = Inf,
                                    traj_min_height = -Inf, 
                                    traj_max_height = Inf,
-                                   vert_min_height = -Inf,
-                                   vert_max_height = Inf) {
+                                   vert_min_lon = -Inf, 
+                                   vert_max_lon = Inf,
+                                   vert_min_lat = -Inf, 
+                                   vert_max_lat = Inf,
+                                   vert_min_height = -Inf, 
+                                   vert_max_height = Inf
+                                   ) {
+
+    stopifnot("Height, lon, or lat columns not found in data frame!" = 
+              c(hs_cheight, hs_clon, hs_clat) %in% hs_cnames)
 
     # Read trajectory files into a data frames
-    hysplit_df_ls <- cqmaTools::files2df(
+    hysplit_df_ls <- files2df(
         files = files,
         header = FALSE,
         hs_skip = hs_skip,
         hs_cnames = hs_cnames
     )
 
-    # Filter data frames (trajectories) by height.
-    h_filter <- vapply(hysplit_df_ls, function(x){
-        return(all(
-            all(x[["height"]] > traj_min_height),
-            all(x[["height"]] < traj_max_height)
-        ))
-    }, logical(1))
+    # Helper function for filtering whole trajectories.
+    # Remove whole trajectories that don't fall inside the minimumm and 
+    # maximum values in the given column.
+    # @param data_ls a list of data frames.
+    # @parma cname a character(1). A column name in the given data frame.
+    # @param min,max numeric(1). Maximum and mininum values.
+    # @return a list of data frames.
+    minmax_filter <- function(data_ls, cname, min, max) {
+        minmax_filter <- vapply(data_ls, function(x) {
+            return(all(
+                all(x[[cname]] > min),
+                all(x[[cname]] < max)
+            ))
+        }, logical(1))
+        return(data_ls[minmax_filter])
+    }
+
+    # Filter data frames (trajectories) by height, lon, and lat.
+    if (!all(traj_min_height == -Inf, traj_max_height == Inf))
+        hysplit_df_ls <- minmax_filter(data_ls = hysplit_df_ls,
+                                       cname = hs_cheight,
+                                       min = traj_min_height,
+                                       max = traj_max_height)
+
+    if (!all(traj_min_lon == -Inf, traj_max_lon == Inf))
+        hysplit_df_ls <- minmax_filter(data_ls = hysplit_df_ls,
+                                       cname = hs_clon,
+                                       min = traj_min_lon,
+                                       max = traj_max_lon)
+
+    if (!all(traj_min_lat == -Inf, traj_max_lat == Inf))
+        hysplit_df_ls <- minmax_filter(data_ls = hysplit_df_ls,
+                                       cname = hs_clat,
+                                       min = traj_min_lat,
+                                       max = traj_max_lat)
 
     # Bind data frames into one.
-    hysplit_df <- do.call(rbind, hysplit_df_ls[h_filter])
+    hysplit_df <- do.call(rbind, hysplit_df_ls)
 
     # Filter trajectories' vertices by height.
-    hysplit_df <- hysplit_df[hysplit_df[["height"]] > vert_min_height &
-                             hysplit_df[["height"]] < vert_max_height,]
+    if (!all(vert_min_height == -Inf, vert_max_height == Inf))
+        hysplit_df <- hysplit_df[hysplit_df[[hs_cheight]] > vert_min_height &
+                                 hysplit_df[[hs_cheight]] < vert_max_height,]
+
+    if (!all(vert_min_lon == -Inf, vert_max_lon == Inf))
+        hysplit_df <- hysplit_df[hysplit_df[[hs_clon]] > vert_min_lon &
+                                 hysplit_df[[hs_clon]] < vert_max_lon,]
+
+    if (!all(vert_min_lat == -Inf, vert_max_lat == Inf))
+        hysplit_df <- hysplit_df[hysplit_df[[hs_clat]] > vert_min_lat &
+                                 hysplit_df[[hs_clat]] < vert_max_lat,]
 
     # Build a grid. NOTE: Assume the first vertex is the grid's origin.
+    origin_x <- hysplit_df[1, hs_clon]
+    origin_y <- hysplit_df[1, hs_clat]
+    if (all(min_lon < origin_x, min_lat < origin_y,
+            origin_x < max_lon, origin_y < max_lat))
+        stop(paste("Invalid grid for trajectories:", files, sep = "\n"))
     aoi_grid <- build_grid(
-        origin_x = hysplit_df[1, hs_clon],
-        origin_y = hysplit_df[1, hs_clat],
-        min_lon, max_lon, min_lat, 
-        max_lat, grid_resolution, crs = crs
+        origin_x = origin_x,
+        origin_y = origin_y,
+        min_lon = min_lon,
+        max_lon = max_lon,
+        min_lat = min_lat,
+        max_lat = max_lat,
+        grid_resolution = grid_resolution,
+        crs = crs
     )
 
   # Build a sf object (point) using the trajectories' vertices.

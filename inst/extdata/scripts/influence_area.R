@@ -55,12 +55,23 @@ files_df_ls <- split(
     f = files_df[c("site", "year", "trimester")]
 )
 
+# Filter out trimesters without trajectories.
+traj_valid <- sapply(traj_df_ls, function(x){nrow(x) > 0})
+files_df_ls <- files_df_ls[traj_valid,]
+
 # Util function for processing trajectories from each period.
-aoi_fn <- function(x, vert_min_height, vert_max_height) {
+aoi_fn <- function(x, 
+                   vert_min_height, vert_max_height,
+                   vert_min_lon, vert_max_lon,
+                   vert_min_lat, vert_max_lat) {
     aoi <- compute_frequency_grid(
         files = x[["filepath"]],
         vert_min_height = vert_min_height,
-        vert_max_height = vert_max_height
+        vert_max_height = vert_max_height,
+        vert_min_lon = vert_min_lon,
+        vert_max_lon = vert_max_lon,
+        vert_min_lat = vert_min_lat,
+        vert_max_lat = vert_max_lat
     )
 }
 
@@ -69,7 +80,11 @@ aoi_ls <- lapply(
     files_df_ls,
     aoi_fn,
     vert_min_height = 250,
-    vert_max_height = 1300
+    vert_max_height = 1300,
+    vert_min_lon = -80,
+    vert_max_lon = -30,
+    vert_min_lat = -40,
+    vert_max_lat = 10
 )
 
 
