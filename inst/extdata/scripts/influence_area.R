@@ -36,6 +36,19 @@ rm(required_packages)
 # Get the trajectory files.
 files_df <- get_trajectory_metadata(hysplit_path)
 
+# Filter empty files.
+traj_valid <- sapply(files_df[["filepath"]], function(x){
+    data_df <- utils::read.table(
+        file = x, 
+        sep = "", 
+        header = FALSE, 
+        skip = 7, 
+        stringsAsFactors = FALSE
+    )
+    return(all(nrow(data_df ) > 0 & ncol(data_df) > 0))
+})
+files_df <- files_df[traj_valid,]
+
 # Split the trajectories by time periods.
 files_df_ls <- split(
     files_df, 
