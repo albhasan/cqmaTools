@@ -6,38 +6,9 @@
 
 #---- Checked ----
 
-#' @title Read text files into data.frames
-#' @name files2df
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
-#'
-#' @description 
-#' Read text files into data frames (one per file).
-#'
-#' @param files A character. The paths to the input files.
-#' @param header a logical(1). Do the files have a header row?
-#' @param hs_skip a numeric(1). Number of lines to skip from each files' top.
-#' @param hs_cnames a character. The column names of the data in the files.
-#'
-#' @return a list of data frames. 
-#'
-#' @export
-#'
-files2df <- function(files, header, hs_skip, hs_cnames) {
-  res <- list()
-  if(length(files) == 0){
-    warning("Empty list")
-    return(res)
-  }
-  for(i in seq(files)) {
-    res[[i]] <- .file2df(
-      file.in = files[i],
-      cnames = hs_cnames, 
-      header = header, 
-      skip = hs_skip)
-  }
-  names(res) <- basename(files)
-  return(res)
-}
+
+
+
 
 
 
@@ -164,8 +135,8 @@ df2text <- function(a.df){
 #' @export
 removeHeaders <- function(file.vec, path.out, skip, cnames){
   #cnames <- HYSPLIT.COLNAMES                                                    # column names of hysplit files
-  file.dat.list <- files2df(file.vec = file.vec,  header = FALSE, 
-                             skip = skip, cnames = cnames)
+  file.dat.list <- files2df(files = file.vec,  header = FALSE, 
+                            skip = skip, cnames = cnames)
   res <- list()
   for (i in 1:length(file.dat.list)) {
     file.dat <- file.dat.list[[i]]
@@ -396,16 +367,6 @@ file2df <- function(file.in, header, skip, cnames){
 
 
 
-
-
-
-# Transforms a decimal year date to a date-format string
-#
-# @param year.dec A number repesenting a date as a decimal year. e.g. 2000.0013661202
-# @return         A character. e.g. 2000-01-01 11:59:59.999410
-.ydec2date <- function(year.dec){
-  return(as.character(lubridate::date_decimal(year.dec)))
-}
 
 
 
@@ -929,39 +890,12 @@ file2df <- function(file.in, header, skip, cnames){
   traj.dat.list <- .listname2data.frame(df.list = traj.dat.list,                # add file name as a column to each data.frame
                                         colname = "filename")
   traj.dat <- do.call("rbind", traj.dat.list)                                   # collapse trajectory data into a single data.frame
-  traj.dat["profile"] <- .filename2profile(unlist(traj.dat["filename"]))         # add profile as new column to trajectory data
+  traj.dat["profile"] <- filename2profile(unlist(traj.dat["filename"]))         # add profile as new column to trajectory data
   return(split(traj.dat, traj.dat$profile))                                     # split trajectory data.frame by profile. One data.frame per profile
 }
 
 
 
-# Build a profile form a vector of trajectory file names
-#
-# @param file.vec A vector of character
-# @return         A character vector
-.filename2profile <- function(file.vec){
-  bn <- basename(file.vec)
-  return(as.vector(sapply(bn, function(x){
-    toupper(paste(unlist(strsplit(x, split = "_"))[1:4], collapse = "_"))
-  })))
-}
-
-
-
-# Format the file name of the trajectories to put the height before the hour
-#
-# @param file.vec A character vector. The names of the trajectory files
-# @return A character vector
-.formatTrajname <- function(file.vec){
-  file.vec.list <- strsplit(file.vec, split = "_")
-  file.vec.list.df <- as.data.frame(do.call("rbind", file.vec.list))
-  file.vec.list.df["V6"] <- as.numeric(as.vector(unlist(file.vec.list.df["V6"])))
-  file.vec.list.df["V6"] <- formatC(as.vector(unlist(file.vec.list.df["V6"])), 
-                                    digits = 1, width = 6, format = "f", 
-                                    flag = "0")
-  file.vec.list.df <- file.vec.list.df[, c("V1", "V2", "V3", "V4", "V6", "V5")]
-  return(apply( file.vec.list.df, 1 , paste , collapse = "_" ))
-}
 
 
 
@@ -974,45 +908,6 @@ file2df <- function(file.in, header, skip, cnames){
 
 
 
-
-#' @title Plot a set of trajectories
-#'
-#' @description
-#' `r lifecycle::badge("deprecated")`
-#'
-#' This function has been deprecated because it relies on the `sp` package.
-#'
-#' Plot the trajectories in the input files.
-#'
-#' @param traj.file.vec A vector of character. Paths to trajectory files.
-#'
-#' @return A ggplot object
-#'
-.plotTrajs <- function(traj.file.vec){
-
-  lifecycle::deprecate_warn("0.2.0", ".plotTrajs()", "plot_trajectories()")
-
-  long <- NULL; lon <- NULL; lat <- NULL; group <- NULL; map.xlim <- NULL; 
-  trajlabel <- NULL; map.ylim <- NULL
-  # traj.file.vec <- "/home/lagee/Documents/alber/test/tmp/rba/co/simNoHead/rba_2010_10_27_16_1219.20"
-  wgs84 <-  sp::CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
-  traj.dat.list <- files2df(file.vec = traj.file.vec,                          # read the trajectory files into a list of data.frames 
-                             header = FALSE, skip = 0, cnames = HYSPLIT.COLNAMES)
-  traj.dat.list <- .listname2data.frame(df.list = traj.dat.list,                # add file name as column
-                                        colname = "file.vec")
-  traj.dat.df <- do.call("rbind", traj.dat.list)                                # collapse to a single data.frame
-  traj.dat.df["profile"] <- .filename2profile(unlist(traj.dat.df["file.vec"]))  # add profile column
-  traj.dat.df["trajlabel"] <- .formatTrajname(unlist(traj.dat.df["file.vec"]))  # add a label to order by height in the plot
-  trajmap <- ggplot2::ggplot(data = ggplot2::map_data(map = "world"), mapping = ggplot2::aes(long, lat, group = group)) +
-    ggplot2::geom_polygon(fill = "white", colour = "black") +                
-    ggplot2::coord_quickmap(xlim = map.xlim, ylim = map.ylim, expand = TRUE) + 
-    ggplot2::labs(x = "longitude", y = "latitude", color = "trajectory") + 
-    ggplot2::geom_path(data = traj.dat.df,                                      # add the trajectories
-                       mapping = ggplot2::aes(x = lon, y = lat, 
-                                              group = trajlabel, 
-                                              colour = trajlabel))
-  return(trajmap)
-}
 
 
 

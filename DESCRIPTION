@@ -6,21 +6,17 @@ Date: 2016-09-06
 Author: Alber Sanchez
 Maintainer: Alber Sanchez <albhasan@gmail.com>
 Description: Tools for managing the data flow at the Center for Chemical and
-    Environmental Technology (CQMA) of the Brazilian National Institute for Space
-    Research(INPE).
+    Environmental Technology (CQMA) of the Brazilian National Institute for 
+    Space Research(INPE).
 Depends:
     R (>= 3.0.0)
 Imports:
-    methods,
-    parallel,
-    roxygen2,
-    testthat,
     ggplot2,
-    utils,
+    roxygen2,
     sf,
-    stats, 
-    fpc,
-    log4r
+    stats,
+    terra,
+    testthat
 License: MIT + file LICENSE
 RoxygenNote: 7.3.2
 roxygen2 requires Encoding: "UTF-8"

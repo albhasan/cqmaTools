@@ -15,28 +15,31 @@
 #'
 #' @export
 #'
-intersect_trajectories <- function(traj_ls, limit, hs_skip = 7, crs = 4326,
+intersect_trajectories <- function(traj_ls, limit, crs = 4326,
                                    row_after = TRUE){
 
-  # Create a line for each pair of vertices in each trajectory.
-  traj_ls <- lapply(traj_ls, traj2lines)
+    # Create a line for each pair of vertices in each trajectory.
+    traj_ls <- lapply(traj_ls, traj2lines)
 
-  # Intersect the trajectories' lines with the limit.
-  traj_lim_in <- lapply(traj_ls, function(x, y){
-    sapply(x, sf::st_intersects, y = y)
-  }, y = limit)
-  traj_lim_in <- lapply(traj_lim_in, function(x) {
-    sapply(x, function(y) {length(y) > 0})
-  })
+    # Intersect the trajectories' lines with the limit.
+    traj_lim_in <- lapply(traj_ls, function(x, y){
+        sapply(x, sf::st_intersects, y = y)
+    }, y = limit)
+    traj_lim_in <- lapply(traj_lim_in, function(x) {
+        sapply(x, function(y) {length(y) > 0})
+    })
 
-  # Find the first vertex of the line that intersects the limit.
-  row_id <- sapply(traj_lim_in, base::Position, f = isTRUE, nomatch = 0)
+    # Find the first vertex of the line that intersects the limit.
+    row_id <- sapply(traj_lim_in, base::Position, f = isTRUE, nomatch = 0)
 
-  if (row_after)
-    row_id <- ifelse(row_id > 0, row_id + 1, 0)
+    if (row_after)
+        row_id <- ifelse(row_id > 0, row_id + 1, 0)
 
-  return(row_id)
+    return(row_id)
+
 }
+
+
 
 #' @title Build trajectory lines
 #' @name traj2lines
@@ -123,4 +126,38 @@ pattern = "^[a-zA-Z]{3}.[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+.[0-9].$") {
     return(files_df)
 
 }
+
+
+
+#' Format trajectories' names
+#'
+#' @description
+#' Put the height before the hour in given trajectories' names. Also, ensure
+#' the height has the same number of digits.
+#'
+#' @param traj_names a character. Names of trajectories.
+#' @param pattern a character(1). Pattern of valid trajectory names.
+#'
+#' @return a character.
+#'
+format_traj_names <- function(traj_names,
+pattern = "^[A-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+[.][0-9]+") {
+
+    stopifnot("Invalid trajectory names found!" = 
+        all(seq(traj_names) %in% grep(x = traj_names, pattern = pattern))
+    )
+
+    names_ls <- strsplit(traj_names, split = "_")
+    names_df <- as.data.frame(do.call("rbind", names_ls))
+
+    names_df["V6"] <- as.numeric(names_df[["V6"]])
+    names_df["V6"] <- formatC(names_df[["V6"]], digits = 1, width = 6,
+        format = "f", flag = "0")
+    names_df <- names_df[, c("V1", "V2", "V3", "V4", "V6", "V5")]
+
+    return(apply(names_df, 1 , paste , collapse = "_" ))
+
+}
+
+
 

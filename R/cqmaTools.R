@@ -24,8 +24,8 @@
 filterTrajHeight <- function(file.vec, above, cnames){
   # check trajectories' height and make a vector of those to keep
   #cnames <- HYSPLIT.COLNAMES                                                    # column names of the input file    
-  file.dat.list <- files2df(file.vec = file.vec, header = FALSE, 
-                             skip = 0, cnames = cnames)
+  file.dat.list <- files2df(files = file.vec, header = FALSE, 
+                            skip = 0, cnames = cnames)
   keep <- vector(mode = "logical", length = length(file.dat.list))
   keep <- lapply(file.dat.list, function(x){if(sum(x$height < above) > 0){return(FALSE)}; return(TRUE)}) # test
   keep <- as.vector(unlist(keep))
@@ -98,60 +98,6 @@ splitRawdata <- function(file.in, path.out, colname, keepFlags, cnames,
   dup.df["idrow"] <- as.numeric(rownames(dup.df))
   return(list(newfile, dup.df, wrongcoords))
 }
-
-
-
-#' @title Intersect trajectories 
-#' @name intersectTraj
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
-#'
-#' @description 
-#' `r lifecycle::badge("deprecated")`
-#'
-#' This function has been deprecated because it relies on the `sp` package.
-#'
-#' Find trajectories' first point beyond the limit (e.g. over the
-#' sea).
-#'
-#' @param file.vec A character vector. The paths to the input files
-#' @param limit.in A SpatialLinesDataFrame object which is used to intersect
-#' the trajectories.
-#' @param cnames A character vector. The name of the columns of the raw data
-#' file (hysplit)
-#' @param srs A length-1 integer. EPSG code of a spatial reference system.
-#' @param hs_skip A length-1 integer. Number of lines to skip from trajectory
-#' files.
-#'
-#' @return         A list made of a character vector and a list. The character
-#' vector is the path to each trajectory file. The list contains the first row
-#' in the trajectory file which lies over the sea
-#'
-#' @export
-#'
-intersectTraj <- function(file.vec, limit.in, cnames, srs, hs_skip = 0){
-
-  lifecycle::deprecate_warn("0.2.0", "intersectTraj()",
-    "intersect_trajectories()")
-
-  intersect.dat <- list()
-  if(length(file.vec) == 0){
-    warning("No input files!")
-    return(list(file.vec, intersect.dat))
-  }
-
-  traj.dat.list <- 
-    files2df(files = file.vec, header = FALSE,
-             hs_skip = hs_skip, hs_cnames = cnames)
-
-  row_id <- 
-    intersect_trajectories(traj_ls = traj.dat.list, limit = limit.in,
-                           hs_skip = hs_skip, crs = srs)
-  row_id <- ifelse(row_id > 0, row_id + 1, 0)
-
-  return(list(file.vec, row_id))
-
-}
-
 
 
 
@@ -350,7 +296,6 @@ crossdata <- function(traj.intersections, stations.df, tolerance.sec, timezone,
 #' @param maxfm.ppm          A numeric. Maximum number of units away from the central tendency
 #' @param stations.df        A data.frame with metereological station data. It must contain at least the columns c("name", "lon", "lat")
 #' @param plot2file          A logical or NA. Should plots be stored as files? Use NA to not plot anything
-#' @param logger             A log4r object
 #' @param trajCnames         A character. Column names of hysplit files
 #' @param obsCnames          A character. Filtered observation column names
 #' @param profileCnames      A character. Column names of the pofiles
@@ -362,7 +307,7 @@ plotTrajbackground <- function(file.in, path.out, traj.interpol,
                                 device, map.xlim, 
                                 map.ylim, map.height, map.width, sec.width, 
                                 sec.height, prof.height, prof.width, nsd, 
-                                maxfm.ppm, stations.df, plot2file, logger, 
+                                maxfm.ppm, stations.df, plot2file,
                                trajCnames, obsCnames, profileCnames, trajFileMet){
   ## @param use.backgorund     A character. The type of filter used when calculating the background concentration. The options are c("median", "hard")
   
@@ -392,13 +337,13 @@ plotTrajbackground <- function(file.in, path.out, traj.interpol,
   #
   traj.file.vec <- c(traj.intersections[[1]], traj.plot)                        # all the trajectory file names 
   traj.file.vec <- traj.file.vec[!is.na(traj.file.vec)]                         # remove NAs
-  traj.dat.list <- files2df(file.vec = traj.file.vec,                          # read the trajectory files into a list of data.frames 
+  traj.dat.list <- files2df(files = traj.file.vec,                          # read the trajectory files into a list of data.frames 
                              header = FALSE, skip = 0, cnames = trajCnames)
   traj.dat.list <- .listname2data.frame(df.list = traj.dat.list,                # add file name as column
                                         colname = "file.vec")
   traj.dat.df <- do.call("rbind", traj.dat.list)                                # collapse to a single data.frame
-  traj.dat.df["profile"] <- .filename2profile(unlist(traj.dat.df["file.vec"]))  # add profile column
-  traj.dat.df["trajlabel"] <- .formatTrajname(unlist(traj.dat.df["file.vec"]))  # add a label to order by height in the plot
+  traj.dat.df["profile"] <- filename2profile(unlist(traj.dat.df["file.vec"]))  # add profile column
+  traj.dat.df["trajlabel"] <- format_traj_names(unlist(traj.dat.df["file.vec"]))  # add a label to order by height in the plot
   #
   # process interpolated data
   #
@@ -406,7 +351,7 @@ plotTrajbackground <- function(file.in, path.out, traj.interpol,
                             stringsAsFactors = FALSE)
   names(interpol.df) <- c("file.vec", "interpolated")
   interpol.df["file.vec"] <- basename(as.vector(unlist(interpol.df["file.vec"])))
-  interpol.df["profile"] <- .filename2profile(unlist(interpol.df["file.vec"]))  # add profile column
+  interpol.df["profile"] <- filename2profile(unlist(interpol.df["file.vec"]))  # add profile column
   interpol.df <- cbind(interpol.df, 
                        .trajFilenames2metadata(
                          file.vec = unlist(interpol.df["file.vec"]), 
@@ -425,8 +370,8 @@ plotTrajbackground <- function(file.in, path.out, traj.interpol,
                              "slat", "slon", "sheight", 
                              "spressure", "filerow")
   intersec.df["syear"] <- unlist(intersec.df["syear"]) + 2000
-  intersec.df["profile"] <- .filename2profile(as.vector(unlist(intersec.df["file.vec"])))  # add profile column
-  intersec.df["trajlabel"] <- .formatTrajname(as.vector(unlist(intersec.df["file.vec"])))
+  intersec.df["profile"] <- filename2profile(as.vector(unlist(intersec.df["file.vec"])))  # add profile column
+  intersec.df["trajlabel"] <- format_traj_names(as.vector(unlist(intersec.df["file.vec"])))
   #
   # base map
   #
@@ -438,7 +383,6 @@ plotTrajbackground <- function(file.in, path.out, traj.interpol,
   filenames <- vector(mode = "character", length = 0)                           # files created on this function
   profile.all <- data.frame()                                                   # keep the profile data  
   for (prof in profile.vec) {
-    log4r::debug(logger, paste(" - - processing profile ", prof, sep = ""))
     #
     # merge data
     #
@@ -447,7 +391,7 @@ plotTrajbackground <- function(file.in, path.out, traj.interpol,
     # nrow(prof.obs) == 0 because the naming convention of profile changed????
     prof.obs <- raw.df[raw.df$profile == prof, ]                                # observed data
     if (nrow(prof.obs) < 1) {
-      log4r::debug(logger, paste(" - - No observations found for ", prof, sep = ""))
+      warning(" - - No observations found for ", prof, sep = "")
       next()
     }
     
@@ -623,7 +567,7 @@ plotTrajYear <- function(file.vec, path.out, device, map.xlim, map.ylim, map.hei
   #
   trajCnames <- c("V1", "V2", "year", "month", "day", "hour", "min",            # column names of the trajectory files
                   "V8", "V9", "lat", "lon", "height", "pressure")   
-  traj.dat.list <- files2df(file.vec = file.vec, header = FALSE, skip = 0,     # read all the trajectory files into a list of data.frames
+  traj.dat.list <- files2df(files = file.vec, header = FALSE, skip = 0,     # read all the trajectory files into a list of data.frames
                              cnames = trajCnames)
   traj.dat.list <- parallel::mclapply(1:length(traj.dat.list),                  # add file name as a column to each data.frame
                                       function(x, dat.list){
@@ -662,24 +606,6 @@ plotTrajYear <- function(file.vec, path.out, device, map.xlim, map.ylim, map.hei
 
 
 
-#' @title Invert the parameters of rgeos::gIntersection
-#' @name intersectTraj.intersect
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
-#'
-#' @description Invert the parameters of rgeos::gIntersection
-#'
-#' @param g2   A SP object
-#' @param g1   A SP object
-#' @param byid A logical vector to pass to rgeos::gIntersection
-#' @return The intersection resutl as SP objects
-#' @export
-intersectTraj.intersect <- function(g2, g1, byid){
-  return(rgeos::gIntersection(spgeom1 = g1, spgeom2 = g2, byid = byid))
-}
-
-
-
-
 #' @title Compute the trajectory time
 #' @name computeTrajTime
 #' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
@@ -693,7 +619,7 @@ intersectTraj.intersect <- function(g2, g1, byid){
 #' @export
 computeTrajTime <- function(file.vec, line.vec, cnames){
   #cnames = HYSPLIT.COLNAMES
-  data.list <- files2df(file.vec = file.vec, header = FALSE, skip = 0, cnames = cnames)
+  data.list <- files2df(files = file.vec, header = FALSE, skip = 0, cnames = cnames)
   lapply(seq_along(data.list), function(x, data.list, line.vec){
     res <- NA
     adf <- data.list[[x]]

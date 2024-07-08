@@ -1,58 +1,5 @@
-#' @title Build a vector from the origin to both the min and max values
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
-#'
-#' @description 
-#' Build a vector from the minimum to the maximum value ensuring
-#' that origin is a value in the returned vector.
-#'
-#' @param o   a numeric(1). The origin.
-#' @param min a numeric(1). The mininum value.
-#' @param max a numeric(1). The maximum value.
-#'
-#' @return    A numeric.
-#'
-.grid_helper <- function(o, min, max, res) {
-  sort(c(seq(from = o, to = max, by = res), 
-         seq(from = o, to = min, by = -res)[-1]))
-}
 
 
-
-#' @title Build a grid
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
-#'
-#' @description Build a grid that includes the given origin as a vertex.
-#'
-#' @param origin_lon,origin_lat a numeric. Coordinate of origin.
-#' @param min_lon,max_lon  a numeric. Grid's mininum and maximum longitude 
-#'   value.
-#' @param min_lat,max_lat  a numeric. Grid's mininum and maximum latitudes 
-#'   values.
-#' @param grid_resolution A numeric. Grid's resolution.
-#' @param crs A numeric. Coordinate reference system (EPSG).
-#'
-#' @return an sf object (polygon).
-#'
-#' @export
-#'
-build_grid <- function(origin_x, origin_y, min_lon, max_lon, min_lat, 
-                       max_lat, grid_resolution, crs) {
-
-  lon_grid <- .grid_helper(o = origin_x, min = min_lon, max = max_lon,
-                           res = grid_resolution)
-  lat_grid <- .grid_helper(o = origin_y, min = min_lat, max = max_lat,
-                           res = grid_resolution)
-  aoi_grid <-
-    sf::st_as_sf(sf::st_make_grid(
-      x = sf::st_bbox(c(xmin = min(lon_grid), xmax = max(lon_grid),
-                        ymin = min(lat_grid), ymax = max(lat_grid)),
-                      crs = sf::st_crs(crs)),
-      cellsize = grid_resolution
-    ))
-  aoi_grid["gid"] <- seq(nrow(aoi_grid))
-  return(aoi_grid)
-
-}
 
 
 
@@ -72,7 +19,7 @@ build_grid <- function(origin_x, origin_y, min_lon, max_lon, min_lat,
 #'   maximum values for longitude and latitude.
 #' @param grid_resolution A numeric. Grid's resolution.
 
-#' @param traj_min_lon,traj_max_lon,traj_min_lat,traj_max_lattraj_min_height,traj_max_height a numeric(1). Remove trajectories which, at some vertex, fall ouside this ranges.
+#' @param traj_min_lon,traj_max_lon,traj_min_lat,traj_max_lat,traj_min_height,traj_max_height a numeric(1). Remove trajectories which, at some vertex, fall ouside this ranges.
 #' @param vert_min_lon,vert_max_lon,vert_min_lat,vert_max_lat,vert_min_height,vert_max_height a numeric(1). Remove vertices from trajectories falling outsize this ranges.
 #'
 #' @return a terra object. The raster values correspond to the number of
@@ -80,7 +27,8 @@ build_grid <- function(origin_x, origin_y, min_lon, max_lon, min_lat,
 #'
 #' @export
 #'
-compute_frequency_grid <- function(files, hs_skip = 7,
+compute_frequency_grid <- function(files, 
+                                   hs_skip = 7,
                                    hs_cnames = HYSPLIT.COLNAMES,
                                    hs_clon = "lon",
                                    hs_clat = "lat",
@@ -107,76 +55,88 @@ compute_frequency_grid <- function(files, hs_skip = 7,
 
     stopifnot("Height, lon, or lat columns not found in data frame!" = 
               c(hs_cheight, hs_clon, hs_clat) %in% hs_cnames)
+    stopifnot("Invalid number of files" = length(files) > 0)
 
     # Read trajectory files into a data frames
-    hysplit_df_ls <- files2df(
+    data_df_ls <- files2df(
         files = files,
         header = FALSE,
-        hs_skip = hs_skip,
-        hs_cnames = hs_cnames
+        skip = hs_skip,
+        cnames = hs_cnames
     )
 
-    # Helper function for filtering whole trajectories.
-    # Remove whole trajectories that don't fall inside the minimumm and 
-    # maximum values in the given column.
-    # @param data_ls a list of data frames.
-    # @parma cname a character(1). A column name in the given data frame.
-    # @param min,max numeric(1). Maximum and mininum values.
-    # @return a list of data frames.
-    minmax_filter <- function(data_ls, cname, min, max) {
-        minmax_filter <- vapply(data_ls, function(x) {
-            return(all(
-                all(x[[cname]] > min),
-                all(x[[cname]] < max)
-            ))
-        }, logical(1))
-        return(data_ls[minmax_filter])
+    # Filter data frames (trajectories) by height, longitude, and latitude.
+    data_df_ls <- filter_data_frames(x = data_df_ls,
+                                     cname = hs_cheight,
+                                     min = traj_min_height,
+                                     max = traj_max_height)
+    if (length(data_df_ls) == 0) {
+        warning("No trajectory meets the height filter!")
+        return(NA)
     }
 
-    # Filter data frames (trajectories) by height, lon, and lat.
-    if (!all(traj_min_height == -Inf, traj_max_height == Inf))
-        hysplit_df_ls <- minmax_filter(data_ls = hysplit_df_ls,
-                                       cname = hs_cheight,
-                                       min = traj_min_height,
-                                       max = traj_max_height)
+    data_df_ls <- filter_data_frames(x = data_df_ls,
+                                     cname = hs_clon,
+                                     min = traj_min_lon,
+                                     max = traj_max_lon)
+    if (length(data_df_ls) == 0) {
+        warning("No trajectory meets the longitude filter!")
+        return(NA)
+    }
 
-    if (!all(traj_min_lon == -Inf, traj_max_lon == Inf))
-        hysplit_df_ls <- minmax_filter(data_ls = hysplit_df_ls,
-                                       cname = hs_clon,
-                                       min = traj_min_lon,
-                                       max = traj_max_lon)
-
-    if (!all(traj_min_lat == -Inf, traj_max_lat == Inf))
-        hysplit_df_ls <- minmax_filter(data_ls = hysplit_df_ls,
-                                       cname = hs_clat,
-                                       min = traj_min_lat,
-                                       max = traj_max_lat)
+    data_df_ls <- filter_data_frames(x = data_df_ls,
+                                     cname = hs_clat,
+                                     min = traj_min_lat,
+                                     max = traj_max_lat)
+    if (length(data_df_ls) == 0) {
+        warning("No trajectory meets the latitude filter!")
+        return(NA)
+    }
 
     # Bind data frames into one.
-    hysplit_df <- do.call(rbind, hysplit_df_ls)
+    hysplit_df <- do.call(rbind, data_df_ls)
+    if (nrow(hysplit_df) == 0) {
+        warning("Empty data frame!")
+        return(NA)
+    }
 
-    # Filter trajectories' vertices by height.
+    # Filter trajectories' vertices by height, longitude, and latitude.
     if (!all(vert_min_height == -Inf, vert_max_height == Inf))
         hysplit_df <- hysplit_df[hysplit_df[[hs_cheight]] > vert_min_height &
                                  hysplit_df[[hs_cheight]] < vert_max_height,]
+    if (nrow(hysplit_df) == 0) {
+        warning("No trajectory vertex meets the height filter!")
+        return(NA)
+    }
 
     if (!all(vert_min_lon == -Inf, vert_max_lon == Inf))
         hysplit_df <- hysplit_df[hysplit_df[[hs_clon]] > vert_min_lon &
                                  hysplit_df[[hs_clon]] < vert_max_lon,]
+    if (nrow(hysplit_df) == 0) {
+        warning("No trajectory vertex meets the longitude filter!")
+        return(NA)
+    }
 
     if (!all(vert_min_lat == -Inf, vert_max_lat == Inf))
         hysplit_df <- hysplit_df[hysplit_df[[hs_clat]] > vert_min_lat &
                                  hysplit_df[[hs_clat]] < vert_max_lat,]
+    if (nrow(hysplit_df) == 0) {
+        warning("No trajectory vertex meets the longitude filter!")
+        return(NA)
+    }
 
     # Build a grid. NOTE: Assume the first vertex is the grid's origin.
     origin_x <- hysplit_df[1, hs_clon]
     origin_y <- hysplit_df[1, hs_clat]
-    if (all(min_lon < origin_x, min_lat < origin_y,
-            origin_x < max_lon, origin_y < max_lat))
+    if (!all(min_lon < origin_x, 
+             min_lat < origin_y,
+             origin_x < max_lon, 
+             origin_y < max_lat))
         stop(paste("Invalid grid for trajectories:", files, sep = "\n"))
+
     aoi_grid <- build_grid(
-        origin_x = origin_x,
-        origin_y = origin_y,
+        origin_lon = origin_x,
+        origin_lat = origin_y,
         min_lon = min_lon,
         max_lon = max_lon,
         min_lat = min_lat,
@@ -193,14 +153,12 @@ compute_frequency_grid <- function(files, hs_skip = 7,
     )
 
     # Cross the grid and trajetories' vertices.
-
     # NOTE: s2 is slow at running st_intersection.
-    suppressMessages({
-        s2 <- sf::sf_use_s2()
-        sf::sf_use_s2(FALSE)
-        hysplit_sf <- sf::st_intersection(x = hysplit_sf, y = aoi_grid)
-        sf::sf_use_s2(s2)
-    })
+    s2 <- sf::sf_use_s2()
+    suppressMessages({ sf::sf_use_s2(FALSE) })
+    sf::st_agr(hysplit_sf) <- sf::st_agr(aoi_grid) <- "constant"
+    hysplit_sf <- sf::st_intersection(x = hysplit_sf, y = aoi_grid)
+    suppressMessages({ sf::sf_use_s2(s2) })
 
     grid_traj_freq <- as.data.frame(table(
         sf::st_drop_geometry(hysplit_sf)[["gid"]]
@@ -246,8 +204,8 @@ raster2convexhull <- function(r) {
   chrows <- grDevices::chull(x = xy[,"X"], y = xy[,"Y"])
   chrows <- c(chrows, chrows[1])
   cv_pol <- sf::st_polygon(x = list(xy[chrows, ]))
-  cv_pol <- st_sfc(cv_pol, crs = crs(r))
-  cv_pol <- st_sf(id = 1, cv_pol)
+  cv_pol <- sf::st_sfc(cv_pol, crs = terra::crs(r))
+  cv_pol <- sf::st_sf(id = 1, cv_pol)
   return(cv_pol)
 }
 

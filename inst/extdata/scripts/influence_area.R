@@ -117,9 +117,11 @@ traj_df_ls <- split(
 aoi_fn <- function(x, 
                    vert_min_height, vert_max_height,
                    vert_min_lon, vert_max_lon,
-                   vert_min_lat, vert_max_lat) {
+                   vert_min_lat, vert_max_lat,
+                   grid_resolution) {
     aoi <- compute_frequency_grid(
         files = x[["filepath"]],
+        grid_resolution = grid_resolution,
         vert_min_height = vert_min_height,
         vert_max_height = vert_max_height,
         vert_min_lon = vert_min_lon,
@@ -138,7 +140,8 @@ aoi_ls <- lapply(
     vert_min_lon = -80,
     vert_max_lon = -30,
     vert_min_lat = -40,
-    vert_max_lat = 10
+    vert_max_lat = 10,
+    grid_resolution = 0.5
 )
 
 # Save aois rasters to disc.
