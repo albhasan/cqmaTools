@@ -141,7 +141,7 @@ aoi_ls <- lapply(
     vert_max_lon = -30,
     vert_min_lat = -40,
     vert_max_lat = 10,
-    grid_resolution = 0.5
+    grid_resolution = 1.0
 )
 
 # Save aois rasters to disc.
