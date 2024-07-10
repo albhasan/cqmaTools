@@ -250,7 +250,7 @@ crossdata <- function(traj.intersections, stations.df, tolerance.sec, timezone,
   # add a column with normal dates instead of decimal year dates
   station.dat.list <- parallel::mclapply(station.dat.list, 
                                          function(x){
-                                           x["date"] <- unlist(lapply(unlist(x["datedec"]), .ydec2date)); 
+                                           x["date"] <- unlist(lapply(unlist(x["datedec"]), ydec2date)); 
                                            return(as.data.frame(x))
                                          }) # stations' data
   # do the interpolation
@@ -273,8 +273,6 @@ crossdata <- function(traj.intersections, stations.df, tolerance.sec, timezone,
 
 
 #' @title Plot profiles and trajectories
-#' @name plotTrajbackground
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
 #'
 #' @description Plot the input data into map, section, and profile graphs. These plots are stored in disk
 #'

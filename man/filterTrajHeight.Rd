@@ -14,7 +14,8 @@ filterTrajHeight(file.vec, above, cnames)
 \item{cnames}{A character vector. The column names of the hysplit files}
 }
 \value{
-A data frame with one row for each file and 2 columns: The trajectories' path and a boolean indicating if they meet the test
+\if{html}{\out{<div class="sourceCode">}}\preformatted{    A data frame with one row for each file and 2 columns: The trajectories' path and a boolean indicating if they meet the test
+}\if{html}{\out{</div>}}
 }
 \description{
 Check if the trajectories are above the given treshold

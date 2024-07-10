@@ -94,3 +94,36 @@ test_that("build_grid works", {
 
 })
 
+
+
+test_that("grid_to_raster works", {
+
+    lon_o = -74
+    lat_o = 4
+    lon_min = -78
+    lon_max = -70
+    lat_min = -5
+    lat_max = 12
+    res = 0.5 
+    srs = 4326
+    g_sf <- build_grid(origin_lon = lon_o, origin_lat = lat_o,
+        min_lon = lon_min, max_lon = lon_max, min_lat = lat_min,
+        max_lat = lat_max, grid_resolution = res, crs = 4326)
+    g_sf["val"] <- rnorm(n = nrow(g_sf))
+
+    expect_error(grid_to_raster(grid_sf = g_sf, grid_resolution = res,
+                                cname = "fake_name"))
+
+    g_r <- grid_to_raster(grid_sf = g_sf, grid_resolution = res,
+                          cname = "val")
+
+    tol <- .Machine$double.eps^0.3
+    expect_equal(prod(dim(g_r)), expected = nrow(g_sf))
+    expect_true(abs(sum(g_r[]) - sum(g_sf[["val"]])) < tol)
+    expect_true(abs(mean(g_r[]) - mean(g_sf[["val"]])) < tol)
+    expect_true(abs(sd(g_r[]) - sd(g_sf[["val"]])) < tol)
+    expect_true(abs(min(g_r[]) - min(g_sf[["val"]])) < tol)
+    expect_true(abs(max(g_r[]) - max(g_sf[["val"]])) < tol)
+
+})
+

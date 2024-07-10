@@ -16,7 +16,8 @@ removeHeaders(file.vec, path.out, skip, cnames)
 \item{cnames}{A character. The names of the columns of the returned data frame}
 }
 \value{
-A list of paths to the created files
+\if{html}{\out{<div class="sourceCode">}}\preformatted{    A list of paths to the created files
+}\if{html}{\out{</div>}}
 }
 \description{
 Remove header from files

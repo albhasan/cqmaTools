@@ -125,3 +125,39 @@ test_that("filter_data_frames works", {
 
 })
 
+
+
+test_that("cast_df_cols works", {
+
+    # Create data frames with random character data.
+    rows_cols <- sample.int(10, size = 2)
+    cnames <- sample(c("character", "integer", "double"), size = rows_cols[2], 
+                     replace = TRUE)
+    names(cnames) <- paste0("df_", seq(rows_cols[2]))
+    data_frame <- lapply(cnames, function(x){
+        if (x == "character") 
+            res <- sample(LETTERS, size = rows_cols[1], replace = TRUE)
+        if (x == "double") 
+            res <- rnorm(n = rows_cols[1])
+        if (x == "integer") 
+            res <- sample(10, size = rows_cols[1], replace = TRUE)
+        return(res)
+    })
+    data_frame <- data.frame(lapply(data_frame, as.character))
+
+    # Cast column to original types.
+    res <- cast_df_cols(data_frame, cnames)
+    res_cnames <- vapply(res, class, character(1))
+
+    # Test the casting result.
+    exp_cnames <- cnames
+    exp_cnames[exp_cnames == "double"] <- "numeric"
+    expect_equal(res_cnames, expected = exp_cnames)
+    expect_equal(names(res_cnames), expected = names(exp_cnames))
+
+    # Test errors.
+    expect_error(cast_df_cols(data_frame, LETTERS))
+    expect_error(cast_df_cols(data_frame, LETTERS[seq(rows_cols[2])]))
+
+})
+

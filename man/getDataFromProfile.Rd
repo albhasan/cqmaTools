@@ -10,7 +10,8 @@ getDataFromProfile(prof.name)
 \item{prof.name}{A character. The name of the profile. i.e. RBA_2016_05_16}
 }
 \value{
-A data.frame with columns c("site", "year", "month", "day")
+\if{html}{\out{<div class="sourceCode">}}\preformatted{    A data.frame with columns c("site", "year", "month", "day")
+}\if{html}{\out{</div>}}
 }
 \description{
 Get the data from profile name

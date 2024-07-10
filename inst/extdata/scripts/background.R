@@ -1,143 +1,125 @@
-####################################################################
+###############################################################################
 # BACKGROUND
-#-------------------------------------------------------------------
-####################################################################
-
-
-####################################################################
-# CMQA DATA FLOW
 # This script streamlines the data flow of the CQMA LAB AT INPE
-####################################################################
+#------------------------------------------------------------------------------
+# CMQA DATA FLOW
 # NOTES:
-# a vertical profile is made of jars (12 or 17). Each jar is taken at certain height . A vertical profile corresponds to one flight
-# in the lab, each jar is analyzed and gas concentration is observed
-# for each jar (height) in the profile, a hysplit trajectory is computed
-# each trajectory reach the sea at some point. We 're intereted ONLY in the first point
-# for each trajectory' point-over-the-sea, we interpolate a gas concentration
+# - A vertical profile is made of jars (12 or 17). Each jar is a sample taken 
+#   at certain height . 
+# - A vertical profile corresponds to one flight.
+# - In the lab, each jar is analyzed and gas concentration is measured 
+# - Each jar corresponds to a height in a profile. 
+# - A hysplit trajectory is computed for each jar.
+# - Each trajectory reaches the sea at some point. 
+# - We're intereted ONLY in the first point of each trajectory' that is over 
+#   the sea. 
+# - We use this point to interpolate a gas concentration.
 #-------------------------------------------------------------------
 # TODO:
-# - run alf co and co2 at the same time. co2 produces no output. The control of the cycle is not only site but site & gas
+# - run alf co and co2 at the same time. co2 produces no output. The control of 
+#   the cycle is not only site but site & gas
 # - add title to figures including gas name
 # - save summary figures
-####################################################################
-# INSTALL PACKAGE
-####################################################################
-#require(devtools)
-#devtools::install_github("lageeinpe/cqmaTools")
-#source("/home/lagee/Documents/ghProjects/cqmaTools/R/util.R") # # source("/Users/lucas/Documents/ghProjects/cqmaTools/R/util.R") # 
-####################################################################
-# LOAD PACKAGES
-####################################################################
-# sudo apt-get install gdal-bin libgdal1-dev libproj-dev
-# install.packages(c("roxygen2", "log4r", "fpc", "ggplot2"))
-# install.packages(c("rgdal", "rgeos", "sp", "maps"))
-suppressMessages(require("log4r"))
-suppressMessages(require(cqmaTools))
-suppressMessages(require(parallel))
-suppressMessages(require(ggplot2))
-suppressMessages(require(utils))
-suppressMessages(require(fpc))
-suppressMessages(require(rgdal))
-suppressMessages(require(rgeos))
-suppressMessages(require(sp))
-suppressMessages(require(maps))
 
-setwd("/home/lagee/Documents/ghProjects/cqmaTools")
 
-suppressMessages(library(devtools))
-devtools::load_all()
+require(cqmaTools)
 
-####################################################################
-# WARNING: USE UNIX-LIKE OS
-####################################################################
-if (get_os() == "windows") {
-  warning("Processing takes longer in windows because it is unable to use the package parallel. See ?mclapply")
-}
-####################################################################
-# GET READY
-####################################################################
-test.path <- "/home/lagee/Documents/alber/test"
+require(log4r)
+require(parallel)
+require(ggplot2)
+require(utils)
+require(fpc)
+require(sf)
+require(maps)
 
-#-------------------------------------
-# BRIEFCASES
-#-------------------------------------
-# magicc.path <- "/home/lagee/home 2/magicc/" # flight logs
-#-------------------------------------
-# STATIONS
-#-------------------------------------
-stationfile <- c(
-  file.path(test.path, "stations", "rpbdaily"), 
-  file.path(test.path, "stations", "ascdaily"), 
-  file.path(test.path, "stations", "cptdaily")
-)
-limit.shp <- file.path(test.path, "shp", "limite.shp")
-samerica.shp <- file.path(test.path, "shp", "continentalSouthAmericaLines.shp")
-plot.path <- file.path(test.path, "plots")
 
-# path to the resulting numeric files
-data.out.path <- "/home/lagee/Documents/alber/test/BKG_results"
 
-# still requires the gas attached to the path
-hysplit.sim.path <- file.path(test.path, "hysplitsimulations") 
+#---- Configuration ----
 
-rawdatafile.vec <- list.files(file.path(test.path, "rawdata"), 
-                              full.names = TRUE, recursive = FALSE, 
-                              include.dirs = FALSE)
-#-------------------------------------
-# LOG
-#-------------------------------------
+station_dir <- "/home/alber/Documents/cqma/data/test/stations"
+stopifnot("Station directory not found" = dir.exists(station_dir))
+
+# TODO: Update to the actual limit!
+limit_file <- 
+    "/home/alber/Documents/cqma/data/test/shp/fake_limit.shp"
+stopifnot("Limit vector not found!" = file.exists(limit_file))
+
+# TODO: Update to the actual lines.
+samerica_shp <- 
+    "/home/alber/Documents/cqma/data/test/shp/continentalSouthAmericaLines.shp"
+stopifnot("S. America vector not found!" = file.exists(limit_file))
+
+plot_dir <- "/home/alber/Documents/cqma/data/test/plots"
+stopifnot("Plot directory not found" = dir.exists(plot_dir))
+
+# Path to the resulting numeric files
+data_out_dir <- 
+    "/home/alber/Documents/cqma/data/test/BKG_results"
+stopifnot("Result directory not found" = dir.exists(data_out_dir))
+
+# Directory with results from Hysplit runs.
+hysplit_sim_dir <- 
+    "/home/alber/Documents/cqma/data/test/hysplitsimulations"
+stopifnot("Hysplit simulation directory not found" = 
+    dir.exists(hysplit_sim_dir))
+
+raw_data_dir <- "/home/alber/Documents/cqma/data/test/rawdata"
+stopifnot("Raw data directory not found" = dir.exists(raw_data_dir))
+
+tmp_dir <- "/home/alber/Documents/cqma/data/test/tmp"
+    stopifnot(dir.exists(tmp_dir))
+
 logger <- create.logger()
-logfile(logger) <- file.path(test.path, "background.log")
+logfile(logger) <- "/home/alber/Documents/cqma/data/test/background.log"
 level(logger) <- "DEBUG"
 info(logger, "Start! ###############################################")
 
-####################################################################
-# CONFIGURATION PARAMETERS
-####################################################################
 
-#-------------------------------------
-# GENERAL
-#-------------------------------------
-# time zone used for data's dates and also for date computations
+#---- Validation ----
+
+if (get_os() == "windows") {
+  warning(paste("Processing takes longer in windows because it is unable to", 
+                 "use the package parallel. See ?mclapply"))
+}
+
+
+
+#---- Process stations ----
+
+rawdatafile_vec <- list.files(raw_data_dir, full.names = TRUE, 
+                              recursive = FALSE, include.dirs = FALSE)
+
+
+
+
+#---- Configuration parameters ----
+
+# Time zone used for data's dates and also for date computations
 timezone <- "GMT"
 
-# date tolerance in seconds. A tolerance used when comparing dates
+# Date tolerance in seconds. A tolerance used when comparing dates
 tolerance.sec <- 10
 
-#-------------------------------------
-# RAW DATA PARAMETERS
-#-------------------------------------
-
-# name of a column name to filter raw data
+# Name of a column name to filter raw data
 flagcolname <- "flag"
 
-# flags to keep in the raw data
+# Flags to keep in the raw data
 keepFlags <- c("...", "..>", "..<")
 
-#-------------------------------------
-# INTERPOLATION PARAMETER
-#-------------------------------------
-# shapefile used to intersect the trajectories
-limit.sp <- readOGR(dsn = dirname(limit.shp), 
-                    layer = strsplit(basename(limit.shp), 
-                                     split = '[.]')[[1]][[1]], 
-                    verbose = FALSE) 
+# Shapefile used to intersect the trajectories
+limit_sf <- sf::read_sf(dsn = limit_file)
+samerica_sf <- sf::read_sf(dsn = samerica_shp)
 
-samerica.sp <- readOGR(dsn = dirname(samerica.shp), 
-                       layer = strsplit(basename(samerica.shp), 
-                                        split = '[.]')[[1]][[1]], 
-                       verbose = FALSE)
-
-# time offset for the trajectory (once over the sea) records to match station's
+# Time offset for the trajectory (once over the sea) records to match station's
 # data. i.e 2 days are (2 * 24 * 3600) * (-1) seconds
-searchTranslation <- (2 * 24 * 3600) * (-1)
+search_translation <- (2 * 24 * 3600) * (-1)
 
-# number of +/- standard deviations used to filter the interpolated data into 
+# Number of +/- standard deviations used to filter the interpolated data into 
 # backgorund
 nsd <- 2
 
-# maximum number of units away from the central tendency
-maxfm.ppm <- 1.5
+# Maximum number of units away from the central tendency
+maxfm_ppm <- 1.5
 
 # TYPES of background computation:
 # - Hard is applying twice the soft. 
@@ -146,108 +128,91 @@ maxfm.ppm <- 1.5
 # - Median replace all the values by the median afther filtering outliers 
 # - Cluster splits the data and applies soft in each cluster
 
-#-------------------------------------
-# TRAJECTORY PARAMETERS
-#-------------------------------------
 
-# Time to modify the hysplit file search. 10 days into the past is (10 * 24 * 3600) * (-1)
-backTrajTime <- (10 * 24 * 3600) * (-1)
+# Time to modify the hysplit file search. 10 days into the past is 
+# (10 * 24 * 3600) * (-1)
+back_traj_time <- (10 * 24 * 3600) * (-1)
 
 # keep trajectories above this height treshold
-keepAbove <- 0
+keep_above <- 0
 
 # Number of lines to remove from the header of hysplit's simulation files
-simHeaderLines <- 7
+hs_skip <- 7
 
 # Filter trajectories which intersect west of this
-inbound.minx = -70
-inbound.maxx = NA
-inbound.miny = NA
-inbound.maxy = NA
+inbound_minx = -70
+inbound_maxx = NA
+inbound_miny = NA
+inbound_maxy = NA
 
 # Are filtered trajectories included in plots?
-plotAllTrajectories <- FALSE
+plot_all_trajectories <- FALSE
 
-# column names of hysplit files
-HYSPLIT.COLNAMES <- c("V1", "V2", "year", "month", "day", "hour", "min", 
-                      "V8", "V9", "lat", "lon", "height", "pressure") 
+# Metereological station data
+s_files <- c(
+  "rpb" = file.path(station_dir, "rpbdaily.co2.txt"), 
+  "asc" = file.path(station_dir, "ascdaily.co2.txt"), 
+  "cpt" = file.path(station_dir, "cptdaily.co2.txt")
+)
+station_df <- 
+    data.frame(
+        name = c("RPB", "ASC", "CPT"),
+        lon  = c(-59.430, -14.400, 18.189),
+        lat  = c(13.162, -7.967, -34.352),
+        station_files = c(s_files["rpb"], s_files["asc"], s_files["cpt"])
+    )
+rm(s_files)
 
-#-------------------------------------
-# METEREOLOGICAL STATION DATA
-#-------------------------------------
-name <- c("RPB", "ASC", "CPT")
-lon <- c(-59.430, -14.400, 18.189)
-lat <- c(13.162, -7.967, -34.352)
-stations.df <- data.frame(name, lon, lat, stationfile)
-rm(name, lon, lat, stationfile)
-#-------------------------------------
-# MODELS OF TEMPERATURE AND PRESSURE
-# h is height
-#-------------------------------------
-# ALFpres <- function(h){return(4E-6 *  h^2 - 0.1106 * h + 1004.5)}
-# ALFtemp <- function(h){return(4E-7 *  h^2 - 0.0074 * h + 32.639)}
-# RBApres <- function(h){return(4E-6 *  h^2 - 0.1209 * h + 1041.5)}
-# RBAtemp <- function(h){return(2E-11 * h^2 - 0.006 * h + 29.996)}
-# SANtemp <- function(h){return(3E-7 *  h^2 - 0.0067 * h + 29.92)}
-# SANpres <- function(h){return(0    *  h^2 - 0.1054 * h + 1093.7)}
-# TABtemp <- function(h){return(2E-7 *  h^2 - 0.0063 * h + 28.507)}
-# TABpres <- function(h){return(4E-6 *  h^2 - 0.1121 * h + 1006.6)}
-#-------------------------------------
-# SITE HEIGHTS (mts)
-#-------------------------------------
-# siteheights <- list()
-# siteheights["ALF"] <- 250
-# siteheights["RBA"] <- 153
-# # siteheights["SAN"] <- 152
-# siteheights["TAB"] <- 188
-# siteheights["TEF"] <- 188
-#-------------------------------------
-# PLOT
-#-------------------------------------
-plot2file <- TRUE                           # plots stored as files. Use NA for not plotting
-goldrat <- (1 + sqrt(5))/2                  # width - height proportion 
-device <- "png"                             # image format for data plots
-map.xlim <- c(-80, 0)                       # map's min & max longitude
-map.ylim <- c(-45, 35)                      # map's min & max latitude
-map.height <- 8                             # map image size
-map.width <- map.height * goldrat           # map image size
-sec.width <- map.width                      # crosssection map image size
-sec.height <- sec.width / goldrat           # crosssection map image size
-prof.height <- map.height                   # profile image size
-prof.width <- prof.height / goldrat         # profile image size
 
-# spatial reference system assumed for geographic data 
-SPATIAL.REFERENCE.SYSTEM <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
 
-# @param cnames     A character vector. The name of the columns of the raw data file
-RAW.DATA.COLNAMES <- c("site", "year", "month", "day", "hour", "min", "flask", 
-                       "V8", "concentration", "flag", "V11", "ayear", "amonth", 
-                       "aday", "ahour", "amin", "lat", "lon", "height", 
-                       "eventnumber", "flat", "flon", "fheight")
+#---- Plot setup ----
+
+plot2file <- TRUE                   # Store plots. Use NA for not plotting
+goldrat <- (1 + sqrt(5))/2          # width - height proportion 
+device <- "png"                     # image format for data plots
+map_xlim <- c(-80, 0)               # map's min & max longitude
+map_ylim <- c(-45, 35)              # map's min & max latitude
+map_height <- 8                     # map image size
+map_width <- map_height * goldrat   # map image size
+sec_width <- map_width              # crosssection map image size
+sec_height <- sec_width / goldrat   # crosssection map image size
+prof_height <- map_height           # profile image size
+prof_width <- prof_height / goldrat # profile image size
+
+# Spatial reference system assumed for geographic data 
+spatial_reference_system <- 4326
 
 # The column names of the raw data file to keep after filtering
-RAW.DATA.COLNAMES.KEEP <- c("site", "lat", "lon", "height", "year", "month", 
-                            "day", "hour", "min", "flask", "concentration", 
-                            "eventnumber")
-# column anmes that make a profile
-PROFILE.COLNAMES <- c("site", "year", "month", "day")
-# metadata included in the trajectory's file names
-TRAJ.FILENAMES.METADATA <- c("site", "year", "month", "day", "hour", "height")
-####################################################################
-# SCRIPT
-####################################################################
+rawdata_keep_cols <- c("site", "lat", "lon", "height", "year", "month", 
+                       "day", "hour", "min", "flask", "concentration", 
+                       "eventnumber")
+stopifnot("Missing columns from raw data" = 
+    all(rawdata_keep_cols %in% rawdata_keep_cols))
+
+# Column names that make a profile
+profile_colnames <- c("site", "year", "month", "day")
+
+# Metadata included in the trajectory's file names
+traj_filenames_metadata <- c("site", "year", "month", "day", "hour", "height")
+
+
+
+#---- script ----
+
 flux.total.list <- list()
-for (i in 1:length(rawdatafile.vec)) {
-  rawdatafile.path <- rawdatafile.vec[i]
-  info(logger, paste("Processing raw data:", rawdatafile.path, sep = " "))
-  site <- unlist(strsplit(basename(rawdatafile.path), split = ".", fixed = TRUE))[1]
-  gas <- unlist(strsplit(basename(rawdatafile.path), split = ".", fixed = TRUE))[2]
-  base.path <-  file.path(test.path, "tmp", site, gas, fsep = .Platform$file.sep)
+for (i in seq(rawdatafile_vec)) {
+  rawdata_file <- rawdatafile_vec[i]
+  info(logger, paste("Processing raw data:", rawdata_file, sep = " "))
+  site <- unlist(strsplit(basename(rawdata_file), split = ".", fixed = TRUE))[1]
+  gas <- unlist(strsplit(basename(rawdata_file), split = ".", fixed = TRUE))[2]
+  site_gas_dir <-  file.path(tmp_dir, site, gas, fsep = .Platform$file.sep)
   #-----------------------------------------------------------------------------
   debug(logger, "step 00 - Check directories")
   #-----------------------------------------------------------------------------
-  rawDataClean.path <- file.path(base.path, "rawDataFlag", fsep = .Platform$file.sep)
-  hysplit.nohead.path <- file.path(base.path, "simNoHead", fsep = .Platform$file.sep)
+  rawdata_clean_dir <- file.path(site_gas_dir, "rawDataFlag", 
+                                 fsep = .Platform$file.sep)
+  hysplit.nohead.path <- file.path(site_gas_dir, "simNoHead", 
+                                   fsep = .Platform$file.sep)
   # create the missing folders
   folder.vec <- c(rawDataClean.path, hysplit.nohead.path)
   for (folder in folder.vec[!dir.exists(folder.vec)]) {

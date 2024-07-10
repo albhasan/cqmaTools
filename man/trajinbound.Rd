@@ -18,7 +18,8 @@ trajinbound(traj.intersections, minx, maxx, miny, maxy)
 \item{maxy}{A numeric. The maximum X}
 }
 \value{
-A data frame
+\if{html}{\out{<div class="sourceCode">}}\preformatted{              A data frame
+}\if{html}{\out{</div>}}
 }
 \description{
 Check if the trajectory intersection is in the given boundary

@@ -41,6 +41,7 @@ build_grid <- function(origin_lon, origin_lat, min_lon, max_lon, min_lat,
 }
 
 
+
 #' Build a vector that passes through the origin
 #'
 #' @description
@@ -57,5 +58,40 @@ build_grid <- function(origin_lon, origin_lat, min_lon, max_lon, min_lat,
 grid_helper <- function(o, min, max, res) {
   sort(c(seq(from = o, to = max, by = res), 
          seq(from = o, to = min, by = -res)[-1]))
+}
+
+
+
+#' Rasterize a grid
+#'
+#' @description
+#' Transform a grid (sf object) into a raster (terra object).
+#'
+#' @param grid_sf an sf object of type polygon.
+#' @param grid_resolution a numeric of length 1 or 2.
+#' @param cname a character(1). Name of an attribute in grid_sf.
+#'
+#' @return a raster (terra object).
+#'
+#' @seealso [terra::rasterize] which this function wraps.
+#'
+#' @export
+#'
+grid_to_raster <- function(grid_sf, grid_resolution, cname) {
+
+    stopifnot("Expected character(1) for `cname`" = length(cname) == 1)
+    stopifnot("`cname` not found in grid_sf!" = cname %in% colnames(grid_sf))
+    stopifnot("Expected an sf object for a grid!" = 
+        inherits(grid_sf, what = "sf"))
+    stopifnot("Expected a grid of type POLYGON" = 
+        as.character(sf::st_geometry_type(grid_sf, by_geometry = FALSE)) %in% 
+            "POLYGON")
+
+    grid_vect <- terra::vect(grid_sf)
+    template <- terra::rast(grid_vect, resolution = grid_resolution)
+    grid_r <- terra::rasterize(grid_vect, y = template, field = cname)
+
+    return(grid_r)
+
 }
 

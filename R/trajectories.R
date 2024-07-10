@@ -55,6 +55,7 @@ intersect_trajectories <- function(traj_ls, limit, crs = 4326,
 #' @return         A list of [sf::st_linestring] objects.
 #'
 traj2lines <- function(traj_df, clon = "lon", clat = "lat"){
+    stopifnot("Expected data frame!" = is.data.frame(traj_df))
     lines_ls <- list()
     for (i in seq(nrow(traj_df))) {
         if (i == 1) next
@@ -70,55 +71,35 @@ traj2lines <- function(traj_df, clon = "lon", clat = "lat"){
 #' Get metadata from trajectory files
 #'
 #' @description
-#' List the trajectory files in the given directory and build a data frame with
-#' the metadata stores in their names.
+#' Build a data frame with metadata extracted from the given filenames.
 #'
-#' @param path a character(1). Path to a directory.
-#' @param cnames a named character vector. The vector's names are the names for 
-#'   the resulting data frame and its values are their data types.
-#' @param trimester a vector with 12 elements identifying the trimester of each
-#'   month.
-#' @param pattern a character(1). Pattern to recognize trajectory files.
+#' @param files a character. Path to trajectory files.
+#' @param cnames a named character. The vector's names are the names for the 
+#'   resulting data frame and its values are their data types.
+#' @param m_period a vector with 12 elements identifying a period for each
+#'   month (e.g. trimester, semester, etc.).
 #' 
 #' @return a data frame.
 #'
 #' @export
 #'
-get_trajectory_metadata <- function(path, 
-                                    cnames = c(site = "chr", year = "int", 
-                                               month = "int", day = "int", 
-                                               hour = "int", height = "dbl"),
-                                    trimester = c("t1", "t1", "t1", 
-                                                  "t2", "t2", "t2", 
-                                                  "t3", "t3", "t3", 
-                                                  "t4", "t4", "t4"),
-pattern = "^[a-zA-Z]{3}.[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+.[0-9].$") {
+get_trajectory_metadata <- function(files, cnames = TRAJECTORY.COLNAMES,
+                                    m_period = YEAR.TRIMESTERS) {
 
-    stopifnot("Invalid column type!" = cnames %in% c("chr", "int", "dbl"))
-    stopifnot("Trimester length must be 12!" = length(trimester) == 12)
+    stopifnot("Invalid column type!" = cnames %in% 
+        c("character", "double", "integer"))
+    stopifnot("`month` column not found!" = "month" %in% names(cnames))
+    stopifnot("`m_period` length must be 12!" = length(m_period) == 12)
 
-    # Get a data frame of file names.
-    files <- list.files(
-        path = path, 
-        pattern = pattern,
-        full.names = TRUE,
-        recursive = TRUE
-    )
-    files_df <- data.frame(do.call(what = rbind, 
-                                   strsplit(basename(files), split = "_")))
+    files_df <- data.frame(do.call(
+        what = rbind,
+        strsplit(basename(files), split = "_")
+    ))
+    files_df <- cast_df_cols(files_df, cnames = cnames)
 
-    # Cast data frame columns.
-    colnames(files_df) <- names(cnames)
-    for (cn in names(cnames)) {
-        f <- identity
-        if (cnames[cn] == "int") f <- as.integer
-        if (cnames[cn] == "dbl") f <- as.double
-        files_df[cn] <- f(files_df[[cn]])
-    }
-
-    # Add the trimesters.
+    # Add the month periods.
     if ("month" %in% colnames(files_df))
-        files_df["trimester"] <- trimester[files_df[["month"]]]
+        files_df["m_period"] <- m_period[files_df[["month"]]]
 
     # Add path to files.
     files_df["filepath"] <- files
@@ -141,13 +122,13 @@ pattern = "^[a-zA-Z]{3}.[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+.[0-9].$") {
 #' @return a character.
 #'
 format_traj_names <- function(traj_names,
-pattern = "^[A-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+[.][0-9]+") {
+                              pattern = TRAJECTORY.FILENAME.PATTERN) {
 
     stopifnot("Invalid trajectory names found!" = 
         all(seq(traj_names) %in% grep(x = traj_names, pattern = pattern))
     )
 
-    names_ls <- strsplit(traj_names, split = "_")
+    names_ls <- strsplit(basename(traj_names), split = "_")
     names_df <- as.data.frame(do.call("rbind", names_ls))
 
     names_df["V6"] <- as.numeric(names_df[["V6"]])
@@ -158,6 +139,4 @@ pattern = "^[A-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+[.][0-9]+") {
     return(apply(names_df, 1 , paste , collapse = "_" ))
 
 }
-
-
 

@@ -10,7 +10,8 @@ trajreachthesea(traj.intersections)
 \item{traj.intersections}{A list made of a character vector and a list. The character vector is the path to each trajectory file while the list contains the first row in the trajectory file which lies over the sea}
 }
 \value{
-A data.frame with one row for each file and 2 columns: The trajectories' path and a boolean indicating if they were kept
+\if{html}{\out{<div class="sourceCode">}}\preformatted{              A data.frame with one row for each file and 2 columns: The trajectories' path and a boolean indicating if they were kept
+}\if{html}{\out{</div>}}
 }
 \description{
 Check if the trajectories reach beyond the limit (the sea)

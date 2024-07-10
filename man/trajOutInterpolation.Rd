@@ -12,7 +12,8 @@ trajOutInterpolation(traj.intersections, stations.df)
 \item{stations.df}{A data.frame of metereological station data. It must have at least 4 columns: name, longitude, latitude, and file c("name", "lon", "lat", "file")}
 }
 \value{
-A data.frame with one row for each file and 2 columns: The trajectories' path and a boolean indicating if meet the test
+\if{html}{\out{<div class="sourceCode">}}\preformatted{              A data.frame with one row for each file and 2 columns: The trajectories' path and a boolean indicating if meet the test
+}\if{html}{\out{</div>}}
 }
 \description{
 Check if the trajectories' intersections fall inside the metereological station coverage

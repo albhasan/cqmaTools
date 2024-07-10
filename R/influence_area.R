@@ -1,44 +1,37 @@
-
-
-
-
-
-#' @title Aggregate trajectory points using a grid
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
+#' Aggregate trajectories' vertices using a grid
 #'
-#' @description Compute the number of trajectory vertices for each cell in the
-#' grid.
+#' @description 
+#' Compute the number of trajectories' vertices for each cell in the grid.
 #'
 #' @param files a character. Paths to trajectory files (i.e. HYSPLIT files).
-#' @param hs_skip a numeric. Number of lines to skip from each file.
-#' @param hs_cnames a character. Names of the columns in each file.
-#' @param hs_clon,hs_clat,hs_cheight a character. Names of the longitude,
-#'   latitude, and height columns in `hs_cnames` 
-#' @param crs a numeric. EPSG code used for both the grid and the trajectories.
-#' @param min_lon,max_lon,min_lat,max_lat a numeric(1). Grid's mininum and 
-#'   maximum values for longitude and latitude.
-#' @param grid_resolution A numeric. Grid's resolution.
-
+#' @param grid_sf an sf object (polygons). The grid used to aggregate
+#'   trajectories. 
+#' @param skip a numeric. Number of lines to skip from each file.
+#' @param from_row,to_row a numeric(1). Use a subset of rows from each data
+#'   frame.
+#' @param cnames a character. Names of the columns in each file.
+#' @param clon,clat,cheight a character. Names of the longitude, latitude, and
+#'   height columns in `cnames` 
+#' @param crs a numeric. EPSG code used for the trajectories.
 #' @param traj_min_lon,traj_max_lon,traj_min_lat,traj_max_lat,traj_min_height,traj_max_height a numeric(1). Remove trajectories which, at some vertex, fall ouside this ranges.
 #' @param vert_min_lon,vert_max_lon,vert_min_lat,vert_max_lat,vert_min_height,vert_max_height a numeric(1). Remove vertices from trajectories falling outsize this ranges.
 #'
-#' @return a terra object. The raster values correspond to the number of
-#'   trajectory vertices in each cell.
+#' @seealso [build_grid] for building grids.
+#'
+#' @return an sf object. The given grid_sf object with additional attributes ("freq".
 #'
 #' @export
 #'
 compute_frequency_grid <- function(files, 
-                                   hs_skip = 7,
-                                   hs_cnames = HYSPLIT.COLNAMES,
-                                   hs_clon = "lon",
-                                   hs_clat = "lat",
-                                   hs_cheight = "height",
+                                   grid_sf,
+                                   skip = 7,
+                                   from_row = 1,
+                                   to_row = Inf,
+                                   cnames = HYSPLIT.COLNAMES,
+                                   clon = "lon",
+                                   clat = "lat",
+                                   cheight = "height",
                                    crs = 4326,
-                                   min_lon = -80, 
-                                   max_lon = -30, 
-                                   min_lat = -40, 
-                                   max_lat = 10,
-                                   grid_resolution = 2, 
                                    traj_min_lon = -Inf, 
                                    traj_max_lon = Inf,
                                    traj_min_lat = -Inf, 
@@ -53,21 +46,36 @@ compute_frequency_grid <- function(files,
                                    vert_max_height = Inf
                                    ) {
 
-    stopifnot("Height, lon, or lat columns not found in data frame!" = 
-              c(hs_cheight, hs_clon, hs_clat) %in% hs_cnames)
+    stopifnot("No files given!" = length(files) > 0)
+    stopifnot("`height`, `lon`, or `lat` columns not found in data frame!" = 
+              c(cheight, clon, clat) %in% cnames)
     stopifnot("Invalid number of files" = length(files) > 0)
+    stopifnot("Expected an sf object for a grid!" = 
+        inherits(grid_sf, what = "sf"))
+    stopifnot("Expected a grid of type POLYGON" = 
+        as.character(sf::st_geometry_type(grid_sf, by_geometry = FALSE)) %in% 
+            "POLYGON")
+    stopifnot("Id column `gid` not found in grid!" =
+        "gid" %in% colnames(grid_sf))
 
     # Read trajectory files into a data frames
     data_df_ls <- files2df(
         files = files,
         header = FALSE,
-        skip = hs_skip,
-        cnames = hs_cnames
+        skip = skip,
+        cnames = cnames
     )
+
+    # Filter number of rows in data frame.
+    if (!all(from_row == 1, to_row == Inf)) {
+        data_df_ls <- lapply(data_df_ls, function(x) {
+            return(x[from_row:to_row,])
+        })
+    }
 
     # Filter data frames (trajectories) by height, longitude, and latitude.
     data_df_ls <- filter_data_frames(x = data_df_ls,
-                                     cname = hs_cheight,
+                                     cname = cheight,
                                      min = traj_min_height,
                                      max = traj_max_height)
     if (length(data_df_ls) == 0) {
@@ -76,7 +84,7 @@ compute_frequency_grid <- function(files,
     }
 
     data_df_ls <- filter_data_frames(x = data_df_ls,
-                                     cname = hs_clon,
+                                     cname = clon,
                                      min = traj_min_lon,
                                      max = traj_max_lon)
     if (length(data_df_ls) == 0) {
@@ -85,7 +93,7 @@ compute_frequency_grid <- function(files,
     }
 
     data_df_ls <- filter_data_frames(x = data_df_ls,
-                                     cname = hs_clat,
+                                     cname = clat,
                                      min = traj_min_lat,
                                      max = traj_max_lat)
     if (length(data_df_ls) == 0) {
@@ -102,53 +110,33 @@ compute_frequency_grid <- function(files,
 
     # Filter trajectories' vertices by height, longitude, and latitude.
     if (!all(vert_min_height == -Inf, vert_max_height == Inf))
-        hysplit_df <- hysplit_df[hysplit_df[[hs_cheight]] > vert_min_height &
-                                 hysplit_df[[hs_cheight]] < vert_max_height,]
+        hysplit_df <- hysplit_df[hysplit_df[[cheight]] > vert_min_height &
+                                 hysplit_df[[cheight]] < vert_max_height,]
     if (nrow(hysplit_df) == 0) {
         warning("No trajectory vertex meets the height filter!")
         return(NA)
     }
 
     if (!all(vert_min_lon == -Inf, vert_max_lon == Inf))
-        hysplit_df <- hysplit_df[hysplit_df[[hs_clon]] > vert_min_lon &
-                                 hysplit_df[[hs_clon]] < vert_max_lon,]
+        hysplit_df <- hysplit_df[hysplit_df[[clon]] > vert_min_lon &
+                                 hysplit_df[[clon]] < vert_max_lon,]
     if (nrow(hysplit_df) == 0) {
         warning("No trajectory vertex meets the longitude filter!")
         return(NA)
     }
 
     if (!all(vert_min_lat == -Inf, vert_max_lat == Inf))
-        hysplit_df <- hysplit_df[hysplit_df[[hs_clat]] > vert_min_lat &
-                                 hysplit_df[[hs_clat]] < vert_max_lat,]
+        hysplit_df <- hysplit_df[hysplit_df[[clat]] > vert_min_lat &
+                                 hysplit_df[[clat]] < vert_max_lat,]
     if (nrow(hysplit_df) == 0) {
         warning("No trajectory vertex meets the longitude filter!")
         return(NA)
     }
 
-    # Build a grid. NOTE: Assume the first vertex is the grid's origin.
-    origin_x <- hysplit_df[1, hs_clon]
-    origin_y <- hysplit_df[1, hs_clat]
-    if (!all(min_lon < origin_x, 
-             min_lat < origin_y,
-             origin_x < max_lon, 
-             origin_y < max_lat))
-        stop(paste("Invalid grid for trajectories:", files, sep = "\n"))
-
-    aoi_grid <- build_grid(
-        origin_lon = origin_x,
-        origin_lat = origin_y,
-        min_lon = min_lon,
-        max_lon = max_lon,
-        min_lat = min_lat,
-        max_lat = max_lat,
-        grid_resolution = grid_resolution,
-        crs = crs
-    )
-
-  # Build a sf object (point) using the trajectories' vertices.
+    # Build a sf object (point) using the trajectories' vertices.
     hysplit_sf <- sf::st_as_sf(
         x = hysplit_df, 
-        coords = c(hs_clon, hs_clat), 
+        coords = c(clon, clat), 
         crs = crs
     )
 
@@ -156,8 +144,8 @@ compute_frequency_grid <- function(files,
     # NOTE: s2 is slow at running st_intersection.
     s2 <- sf::sf_use_s2()
     suppressMessages({ sf::sf_use_s2(FALSE) })
-    sf::st_agr(hysplit_sf) <- sf::st_agr(aoi_grid) <- "constant"
-    hysplit_sf <- sf::st_intersection(x = hysplit_sf, y = aoi_grid)
+    sf::st_agr(hysplit_sf) <- sf::st_agr(grid_sf) <- "constant"
+    hysplit_sf <- sf::st_intersection(x = hysplit_sf, y = grid_sf)
     suppressMessages({ sf::sf_use_s2(s2) })
 
     grid_traj_freq <- as.data.frame(table(
@@ -165,25 +153,15 @@ compute_frequency_grid <- function(files,
     ))
 
     colnames(grid_traj_freq) <- c("gid", "freq")
-    aoi_grid <- merge(
-        x = aoi_grid, 
+    grid_sf <- merge(
+        x = grid_sf, 
         y = grid_traj_freq, 
         by = "gid", 
         all.x = TRUE
     )
 
-    # Cast vector grid to raster.
-    template <- terra::rast(
-        terra::vect(aoi_grid), 
-        resolution = grid_resolution
-    )
-    aoi_grid_r <- terra::rasterize(
-        terra::vect(aoi_grid), 
-        y = template, 
-        field = "freq"
-    )
+    return(grid_sf)
 
-    return(aoi_grid_r)
 }
 
 

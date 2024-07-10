@@ -751,7 +751,7 @@ file2df <- function(file.in, header, skip, cnames){
 .addData2Station <- function(file.in, file.out){
   cnames <- c("datedec", "concentration")
   file.dat <- .file2df(file.in = file.in, header = FALSE, skip = 0, cnames = cnames)
-  file.dat["normdec"] <- unlist(lapply(unlist(file.dat["datedec"]), function(x){return(.ydec2date(x))}))
+  file.dat["normdec"] <- unlist(lapply(unlist(file.dat["datedec"]), function(x){return(ydec2date(x))}))
   utils::write.csv2(file.dat, file = file.out, quote = TRUE)
 }
 

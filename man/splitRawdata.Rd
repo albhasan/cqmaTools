@@ -4,8 +4,15 @@
 \alias{splitRawdata}
 \title{Split a raw data file.}
 \usage{
-splitRawdata(file.in, path.out, colname, keepFlags, cnames, keepCols,
-  cnamesTest)
+splitRawdata(
+  file.in,
+  path.out,
+  colname,
+  keepFlags,
+  cnames,
+  keepCols,
+  cnamesTest
+)
 }
 \arguments{
 \item{file.in}{A character.Path to a raw data file}
@@ -23,10 +30,12 @@ splitRawdata(file.in, path.out, colname, keepFlags, cnames, keepCols,
 \item{cnamesTest}{A character vector. The column names used for testing duplicated rows in the filtered data}
 }
 \value{
-A list iof three. A character with the name of the new file, a data.frame of duplicated or inconsistent rows, and a data.frame of coordinates which were changed because they have the wrong sign
+\if{html}{\out{<div class="sourceCode">}}\preformatted{      A list of three. A character with the name of the new file, a data.frame of duplicated or inconsistent rows, and a data.frame of coordinates which were changed because they have the wrong sign
+}\if{html}{\out{</div>}}
 }
 \description{
-Split a single raw data file. The output files are prefixed with "traj_specs_".
+Split a single raw data file. The output files are prefixed with
+"traj_specs_".
 }
 \author{
 Alber Sanchez, \email{alber.ipia@inpe.br}

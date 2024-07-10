@@ -4,8 +4,17 @@
 \alias{plotTrajYear}
 \title{Plot the trajectories grouped by year}
 \usage{
-plotTrajYear(file.vec, path.out, device, map.xlim, map.ylim, map.height,
-  map.width, stations.df, plot2file)
+plotTrajYear(
+  file.vec,
+  path.out,
+  device,
+  map.xlim,
+  map.ylim,
+  map.height,
+  map.width,
+  stations.df,
+  plot2file
+)
 }
 \arguments{
 \item{file.vec}{A character vector. The paths to  trajectory files}
@@ -27,7 +36,8 @@ plotTrajYear(file.vec, path.out, device, map.xlim, map.ylim, map.height,
 \item{plot2file}{A logical. Should the plot be stored as a file}
 }
 \value{
-A list. The path to the created files
+\if{html}{\out{<div class="sourceCode">}}\preformatted{        A list. The path to the created files
+}\if{html}{\out{</div>}}
 }
 \description{
 Plot the trajectories grouped by year

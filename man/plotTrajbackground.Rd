@@ -4,10 +4,30 @@
 \alias{plotTrajbackground}
 \title{Plot profiles and trajectories}
 \usage{
-plotTrajbackground(file.in, path.out, traj.interpol, traj.intersections,
-  traj.plot, device, map.xlim, map.ylim, map.height, map.width, sec.width,
-  sec.height, prof.height, prof.width, nsd, maxfm.ppm, stations.df,
-  plot2file, logger, trajCnames, obsCnames, profileCnames, trajFileMet)
+plotTrajbackground(
+  file.in,
+  path.out,
+  traj.interpol,
+  traj.intersections,
+  traj.plot,
+  device,
+  map.xlim,
+  map.ylim,
+  map.height,
+  map.width,
+  sec.width,
+  sec.height,
+  prof.height,
+  prof.width,
+  nsd,
+  maxfm.ppm,
+  stations.df,
+  plot2file,
+  trajCnames,
+  obsCnames,
+  profileCnames,
+  trajFileMet
+)
 }
 \arguments{
 \item{file.in}{A character. The path to a filtered observations file or flag filtered raw data}
@@ -18,7 +38,7 @@ plotTrajbackground(file.in, path.out, traj.interpol, traj.intersections,
 
 \item{traj.intersections}{A list made of a character vector and a list. The character vector is the path to each trajectory file while the list contains the first row in the trajectory file which lies over the sea}
 
-\item{traj.plot}{A vector of character. The file path to trajectories to plot additional to those in traj.intersections[[1]]}
+\item{traj.plot}{A vector of character. The file path to trajectories to plot additional to those in traj.intersections[\link{1}]}
 
 \item{device}{A character. Image format, i.e. PNG}
 
@@ -46,8 +66,6 @@ plotTrajbackground(file.in, path.out, traj.interpol, traj.intersections,
 
 \item{plot2file}{A logical or NA. Should plots be stored as files? Use NA to not plot anything}
 
-\item{logger}{A log4r object}
-
 \item{trajCnames}{A character. Column names of hysplit files}
 
 \item{obsCnames}{A character. Filtered observation column names}
@@ -57,11 +75,9 @@ plotTrajbackground(file.in, path.out, traj.interpol, traj.intersections,
 \item{trajFileMet}{A character. Metadata included in the trajectory's file names}
 }
 \value{
-A list of objects. A character vector with the paths to the plot files, and a data.frame with merged data
+\if{html}{\out{<div class="sourceCode">}}\preformatted{              A list of objects. A character vector with the paths to the plot files, and a data.frame with merged data
+}\if{html}{\out{</div>}}
 }
 \description{
 Plot the input data into map, section, and profile graphs. These plots are stored in disk
-}
-\author{
-Alber Sanchez, \email{alber.ipia@inpe.br}
 }

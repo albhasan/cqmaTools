@@ -14,7 +14,8 @@ computeTrajTime(file.vec, line.vec, cnames)
 \item{cnames}{A character. Column names of hysplit files}
 }
 \value{
-A list of difftime (in days)
+\if{html}{\out{<div class="sourceCode">}}\preformatted{    A list of difftime (in days)
+}\if{html}{\out{</div>}}
 }
 \description{
 Compute the trajectory time

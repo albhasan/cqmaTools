@@ -13,17 +13,18 @@ get_os()
 \item{file.in}{A character. The path to a collect report file. i.e /home/user/PFP_3723_ALF_2010_02_17.txt}
 }
 \value{
-A data.frame with the results of comamnds "HISTORY> A" and "HISTORY> C"
+\if{html}{\out{<div class="sourceCode">}}\preformatted{   A data.frame with the results of comamnds "HISTORY> A" and "HISTORY> C"
+}\if{html}{\out{</div>}}
 
-A single string
+\if{html}{\out{<div class="sourceCode">}}\preformatted{              A character(1).
+}\if{html}{\out{</div>}}
 }
 \description{
 Extract history A and C from collected report files
 
-Get the operative system's name. Taken from https://www.r-bloggers.com/identifying-the-os-from-r/
+Get the operative system's name. Taken from
+https://www.r-bloggers.com/identifying-the-os-from-r/
 }
 \author{
-Alber Sanchez, \email{alber.ipia@inpe.br}
-
 Alber Sanchez, \email{alber.ipia@inpe.br}
 }

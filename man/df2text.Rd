@@ -10,7 +10,8 @@ df2text(a.df)
 \item{a.df}{A data.frame}
 }
 \value{
-A length-1 character vector
+\if{html}{\out{<div class="sourceCode">}}\preformatted{A length-1 character vector
+}\if{html}{\out{</div>}}
 }
 \description{
 Convert a data frame to a length-1 character vector

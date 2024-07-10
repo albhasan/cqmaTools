@@ -16,7 +16,8 @@ file2df(file.in, header, skip, cnames)
 \item{cnames}{A vector character. The names of the columns}
 }
 \value{
-A data.frame
+\if{html}{\out{<div class="sourceCode">}}\preformatted{    A data.frame
+}\if{html}{\out{</div>}}
 }
 \description{
 Read a text file made of observations

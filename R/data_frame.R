@@ -114,3 +114,35 @@ filter_data_frames <- function(x, cname, min, max) {
     stop("Invalid argument. Expected a data frame or a list!")
 }
 
+
+#' Cast data frame columns
+#'
+#' @description
+#' Update a data frame's column names and change their types.
+#'
+#' @param .data a data frame.
+#' @param cnames a named character. The vector names will be the vector column
+#'   names and its values will be the new types.
+#'
+#' @return a data frame.
+#'
+cast_df_cols <- function(.data, cnames) {
+
+    stopifnot("Invalid number of column names!" = 
+        ncol(.data) == length(cnames))
+    stopifnot("Expected a named vector!" = !is.null(names(cnames)))
+    stopifnot("Invalid type!" = all(cnames %in% c("character", "double",
+                                                  "integer")))
+
+    colnames(.data) <- names(cnames)
+    for (cn in names(cnames)) {
+        if (cnames[cn] == "character") f <- as.character
+        if (cnames[cn] == "double")    f <- as.double
+        if (cnames[cn] == "integer")   f <- as.integer
+        .data[cn] <- f(.data[[cn]])
+    }
+
+    return(.data)
+
+}
+

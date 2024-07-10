@@ -14,7 +14,8 @@ removeHeader(file_path, col_names, skip)
 \item{skip}{A length-1 numeric. Number of lines to skip when reading the file}
 }
 \value{
-A data.frame
+\if{html}{\out{<div class="sourceCode">}}\preformatted{     A data.frame
+}\if{html}{\out{</div>}}
 }
 \description{
 Read a file and remove its header
