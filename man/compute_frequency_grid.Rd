@@ -26,7 +26,8 @@ compute_frequency_grid(
   vert_min_lat = -Inf,
   vert_max_lat = Inf,
   vert_min_height = -Inf,
-  vert_max_height = Inf
+  vert_max_height = Inf,
+  min_per_vert_in_hrange = 0
 )
 }
 \arguments{
@@ -47,9 +48,12 @@ height columns in \code{cnames}}
 
 \item{crs}{a numeric. EPSG code used for the trajectories.}
 
-\item{traj_min_lon, traj_max_lon, traj_min_lat, traj_max_lat, traj_min_height, traj_max_height}{a numeric(1). Remove trajectories which, at some vertex, fall ouside this ranges.}
+\item{traj_min_lon, traj_max_lon, traj_min_lat, traj_max_lat, traj_min_height, traj_max_height}{a numeric(1). Remove trajectories which, at some vertex, fall outside of these ranges.}
 
-\item{vert_min_lon, vert_max_lon, vert_min_lat, vert_max_lat, vert_min_height, vert_max_height}{a numeric(1). Remove vertices from trajectories falling outsize this ranges.}
+\item{vert_min_lon, vert_max_lon, vert_min_lat, vert_max_lat, vert_min_height, vert_max_height}{a numeric(1). Remove vertices from trajectories falling outside of these ranges.}
+
+\item{min_per_vert_in_hrange}{a double(1). Minimum percentage of vertices
+inside height range for a trajectory to be valid.}
 }
 \value{
 an sf object. The given grid_sf object with additional attributes ("freq".

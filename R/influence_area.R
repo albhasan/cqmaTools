@@ -13,8 +13,10 @@
 #' @param clon,clat,cheight a character. Names of the longitude, latitude, and
 #'   height columns in `cnames` 
 #' @param crs a numeric. EPSG code used for the trajectories.
-#' @param traj_min_lon,traj_max_lon,traj_min_lat,traj_max_lat,traj_min_height,traj_max_height a numeric(1). Remove trajectories which, at some vertex, fall ouside this ranges.
-#' @param vert_min_lon,vert_max_lon,vert_min_lat,vert_max_lat,vert_min_height,vert_max_height a numeric(1). Remove vertices from trajectories falling outsize this ranges.
+#' @param traj_min_lon,traj_max_lon,traj_min_lat,traj_max_lat,traj_min_height,traj_max_height a numeric(1). Remove trajectories which, at some vertex, fall outside of these ranges.
+#' @param vert_min_lon,vert_max_lon,vert_min_lat,vert_max_lat,vert_min_height,vert_max_height a numeric(1). Remove vertices from trajectories falling outside of these ranges.
+#' @param min_per_vert_in_hrange a double(1). Minimum percentage of vertices
+#'   inside height range for a trajectory to be valid.
 #'
 #' @seealso [build_grid] for building grids.
 #'
@@ -43,7 +45,8 @@ compute_frequency_grid <- function(files,
                                    vert_min_lat = -Inf, 
                                    vert_max_lat = Inf,
                                    vert_min_height = -Inf, 
-                                   vert_max_height = Inf
+                                   vert_max_height = Inf,
+                                   min_per_vert_in_hrange = 0
                                    ) {
 
     stopifnot("No files given!" = length(files) > 0)
@@ -57,6 +60,9 @@ compute_frequency_grid <- function(files,
             "POLYGON")
     stopifnot("Id column `gid` not found in grid!" =
         "gid" %in% colnames(grid_sf))
+    stopifnot("Invalid `min_per_vert_in_hrange`!" = 
+        min_per_vert_in_hrange >= 0 & min_per_vert_in_hrange <= 1 &
+        length(min_per_vert_in_hrange) == 1)
 
     # Read trajectory files into a data frames
     data_df_ls <- files2df(
@@ -71,6 +77,23 @@ compute_frequency_grid <- function(files,
         data_df_ls <- lapply(data_df_ls, function(x) {
             return(x[from_row:to_row,])
         })
+    }
+
+    # Filter trajectories by their vertex percentage in height range.
+    if (min_per_vert_in_hrange > 0) {
+        # Compute percentage of vertices in the range from traj_min_height to
+        # traj_max_height for each trajectory.
+        per_vert_in_range <- vapply(
+            data_df_ls,
+            function(x) {
+                sum(
+                    x[[cheight]] >= traj_min_height &
+                    x[[cheight]] <= traj_max_height
+                ) / nrow(x)
+            },
+            double(1)
+        )
+        data_df_ls <-data_df_ls[per_vert_in_range >= min_per_vert_in_hrange]
     }
 
     # Filter data frames (trajectories) by height, longitude, and latitude.

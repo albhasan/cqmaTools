@@ -26,14 +26,18 @@ flask_max_height <- 1300
 vert_min_height <- -Inf
 vert_max_height <- 1300
 
+# Filter trajectories by the percentage of their vertices in height range.
+min_per_vert_in_hrange <- 0.0
+
 # Trajectory files.
 skip = 7
 start_row = 1
 end_row = 48
 
 # Split trajectories in sub-yearly periods.
-#m_period <- YEAR.SEMESTERS
 m_period <- YEAR.TRIMESTERS
+#m_period <- YEAR.SEMESTERS
+#m_period <- YEAR.YEAR
 
 
 
@@ -119,12 +123,13 @@ plot_influence_area <- function(r,
 # Util function for processing trajectories from each period.
 aoi_fn <- function(x, grid_sf, skip, from_row, to_row, vert_min_height,
                    vert_max_height, vert_min_lon, vert_max_lon, vert_min_lat,
-                   vert_max_lat) {
+                   vert_max_lat, min_per_vert_in_hrange) {
     return(compute_frequency_grid(files = x[["filepath"]], grid_sf = grid_sf,
         skip = skip, from_row = from_row, to_row = to_row,
         vert_min_height = vert_min_height, vert_max_height = vert_max_height,
         vert_min_lon = vert_min_lon, vert_max_lon = vert_max_lon,
-        vert_min_lat = vert_min_lat, vert_max_lat = vert_max_lat))
+        vert_min_lat = vert_min_lat, vert_max_lat = vert_max_lat,
+        min_per_vert_in_hrange = min_per_vert_in_hrange))
 }
 
 
@@ -168,7 +173,8 @@ aoi_ls <- lapply(
     vert_min_lon = grid_min_lon,
     vert_max_lon = grid_max_lon,
     vert_min_lat = grid_min_lat,
-    vert_max_lat = grid_max_lat 
+    vert_max_lat = grid_max_lat,
+    min_per_vert_in_hrange = min_per_vert_in_hrange
 )
 
 # Cast grids to rasters.

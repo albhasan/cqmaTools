@@ -21,3 +21,5 @@ YEAR.TRIMESTERS <- c("t1", "t1", "t1", "t2", "t2", "t2",
                      "t3", "t3", "t3", "t4", "t4", "t4")
 YEAR.SEMESTERS <- c("s1", "s1", "s1", "s1", "s1", "s1",
                     "s2", "s2", "s2", "s2", "s2", "s2")
+YEAR.YEAR      <- c("year", "year", "year", "year", "year", "year",
+                    "year", "year", "year", "year", "year", "year")
