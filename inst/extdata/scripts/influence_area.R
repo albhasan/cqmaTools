@@ -12,10 +12,10 @@ stopifnot("Output directory not found!" = dir.exists(out_dir))
 
 grid_resolution <- 1
 grid_crs <- 4326
-grid_min_lon = -80,
-grid_max_lon = -30,
-grid_min_lat = -40,
-grid_max_lat = 10,
+grid_min_lon = -80
+grid_max_lon = -30
+grid_min_lat = -40
+grid_max_lat = 10
 
 # Split trajectories in sub-yearly periods.
 #m_period <- YEAR.SEMESTERS
