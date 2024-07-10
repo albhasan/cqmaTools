@@ -4,18 +4,32 @@ load_all()
 
 
 #---- Configuration ----
+
 hysplit_path <- "/home/alber/Documents/github/cqmaTools/inst/extdata/trajectories/2011"
 out_dir <- "/home/alber/Downloads/tmp"
 
 stopifnot("Hysplit data not found!" = dir.exists(hysplit_path))
 stopifnot("Output directory not found!" = dir.exists(out_dir))
 
+# Grid parameters.
 grid_resolution <- 1
 grid_crs <- 4326
 grid_min_lon = -80
 grid_max_lon = -30
 grid_min_lat = -40
 grid_max_lat = 10
+
+# Filter trajectories by height in their filename.
+flask_max_height <- 1300
+
+# Filter trajectories' vertices by height.
+vert_min_height <- -Inf
+vert_max_height <- 1300
+
+# Trajectory files.
+skip = 7
+start_row = 1
+end_row = 48
 
 # Split trajectories in sub-yearly periods.
 #m_period <- YEAR.SEMESTERS
@@ -126,7 +140,7 @@ files_df <- get_trajectory_metadata(files = files, m_period = m_period,
                                     cnames = TRAJECTORY.COLNAMES)
 
 # Remove trajectories above certain height in their filenames.
-files_df <- files_df[files_df[["height"]] < 1300,]
+files_df <- files_df[files_df[["height"]] < flask_max_height,]
 
 # Split the trajectories by time periods (e.g. trimestres).
 traj_df_ls <- split(files_df, f = files_df[c("site", "year", "m_period")])
@@ -146,11 +160,11 @@ aoi_ls <- lapply(
     traj_df_ls,
     aoi_fn,
     grid_sf = grid_sf,
-    skip = 7,
-    from_row = 1,
-    to_row = 48,
-    vert_min_height = -Inf,
-    vert_max_height = 1300,
+    skip = skip,
+    from_row = start_row,
+    to_row = end_row,
+    vert_min_height = vert_min_height,
+    vert_max_height = vert_max_height,
     vert_min_lon = grid_min_lon,
     vert_max_lon = grid_max_lon,
     vert_min_lat = grid_min_lat,
