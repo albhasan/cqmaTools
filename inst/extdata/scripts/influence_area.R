@@ -148,7 +148,8 @@ files <- list.files(path = hysplit_path, pattern = TRAJECTORY.FILENAME.PATTERN,
 
 
 
-#---- Trimesters ----
+#---- Process by time period ----
+
 
 
 # Helper function for processing areas of influence by different time periods.
@@ -156,6 +157,9 @@ process_period <- function(m_period, split_by) {
 
     files_df <- get_trajectory_metadata(files = files, m_period = m_period,
         cnames = TRAJECTORY.COLNAMES)
+
+    if ("site" %in% split_by)
+        files_df["site"] <- toupper(files_df[["site"]])
 
     # Remove trajectories above certain height in their filenames.
     files_df <- files_df[files_df[["height"]] <= flask_max_height,]
