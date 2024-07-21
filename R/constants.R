@@ -5,8 +5,8 @@ HYSPLIT.COLNAMES <-
 
 # The name of the columns of the raw data file.
 RAW.DATA.COLNAMES <- c("site", "year", "month", "day", "hour", "min", "flask",
-                       "V8", "concentration", "flag", "V11", "ayear", "amonth", 
-                       "aday", "ahour", "amin", "lat", "lon", "height", 
+                       "V8", "concentration", "flag", "V11", "ayear", "amonth",
+                       "aday", "ahour", "amin", "lat", "lon", "height",
                        "eventnumber", "flat", "flon", "fheight")
 
 # Pattern of trajectories' filenames.

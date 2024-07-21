@@ -5,58 +5,32 @@
 \title{Aggregate trajectories' vertices using a grid}
 \usage{
 compute_frequency_grid(
-  files,
+  traj_df,
   grid_sf,
-  skip = 7,
-  from_row = 1,
-  to_row = Inf,
-  cnames = HYSPLIT.COLNAMES,
   clon = "lon",
   clat = "lat",
   cheight = "height",
-  crs = 4326,
-  traj_min_lon = -Inf,
-  traj_max_lon = Inf,
-  traj_min_lat = -Inf,
-  traj_max_lat = Inf,
-  traj_min_height = -Inf,
-  traj_max_height = Inf,
-  vert_min_lon = -Inf,
-  vert_max_lon = Inf,
-  vert_min_lat = -Inf,
-  vert_max_lat = Inf,
-  vert_min_height = -Inf,
-  vert_max_height = Inf,
-  min_per_vert_in_hrange = 0
+  grid_id = "grid_id",
+  crs = sf::st_crs(grid_sf)
 )
 }
 \arguments{
-\item{files}{a character. Paths to trajectory files (i.e. HYSPLIT files).}
+\item{traj_df}{a data frame. Data representing a trajectory.}
 
 \item{grid_sf}{an sf object (polygons). The grid used to aggregate
 trajectories.}
 
-\item{skip}{a numeric. Number of lines to skip from each file.}
+\item{clon, clat, cheight}{a character(1). Names of the longitude, latitude,
+and height columns in \code{traj_df}.}
 
-\item{from_row, to_row}{a numeric(1). Use a subset of rows from each data
-frame.}
+\item{grid_id}{a character(1). Name of the column in \code{grid_sf} which
+identifies each cell in the grid.}
 
-\item{cnames}{a character. Names of the columns in each file.}
-
-\item{clon, clat, cheight}{a character. Names of the longitude, latitude, and
-height columns in \code{cnames}}
-
-\item{crs}{a numeric. EPSG code used for the trajectories.}
-
-\item{traj_min_lon, traj_max_lon, traj_min_lat, traj_max_lat, traj_min_height, traj_max_height}{a numeric(1). Remove trajectories which, at some vertex, fall outside of these ranges.}
-
-\item{vert_min_lon, vert_max_lon, vert_min_lat, vert_max_lat, vert_min_height, vert_max_height}{a numeric(1). Remove vertices from trajectories falling outside of these ranges.}
-
-\item{min_per_vert_in_hrange}{a double(1). Minimum percentage of vertices
-inside height range for a trajectory to be valid.}
+\item{crs}{a numeric. EPSG code used for the trajectory data in \code{traj_df}.}
 }
 \value{
-an sf object. The given grid_sf object with additional attributes ("freq".
+an sf object. The given grid_sf object with additional attributes
+("freq").
 }
 \description{
 Compute the number of trajectories' vertices for each cell in the grid.

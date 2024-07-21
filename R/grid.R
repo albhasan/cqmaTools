@@ -4,19 +4,21 @@
 #' Build a grid that includes the given origin as a vertex.
 #'
 #' @param origin_lon,origin_lat a numeric(1). Coordinate of origin.
-#' @param min_lon,max_lon  a numeric. Grid's mininum and maximum longitude 
+#' @param min_lon,max_lon  a numeric(1). Grid's mininum and maximum longitude 
 #'   value.
-#' @param min_lat,max_lat  a numeric. Grid's mininum and maximum latitudes 
+#' @param min_lat,max_lat  a numeric(1). Grid's mininum and maximum latitudes 
 #'   values.
-#' @param grid_resolution A numeric. Grid's resolution.
-#' @param crs A numeric. Coordinate reference system (EPSG).
+#' @param grid_resolution a numeric. Grid's resolution.
+#' @param crs a numeric(1). Coordinate reference system (EPSG).
+#' @param grid_id a character(1). The name for the columns with the identifier
+#'   for each cell in the grid.
 #'
 #' @return an sf object (polygon).
 #'
 #' @export
 #'
 build_grid <- function(origin_lon, origin_lat, min_lon, max_lon, min_lat, 
-                       max_lat, grid_resolution, crs) {
+                       max_lat, grid_resolution, crs, grid_id = "grid_id") {
 
     stopifnot("The origin must fall in the given ranges!" = all(
         min_lon <= origin_lon, origin_lon <= max_lon,
@@ -34,7 +36,7 @@ build_grid <- function(origin_lon, origin_lat, min_lon, max_lon, min_lat,
             crs = sf::st_crs(crs)),
         cellsize = grid_resolution
     ))
-    aoi_grid["gid"] <- seq(nrow(aoi_grid))
+    aoi_grid[grid_id] <- seq(nrow(aoi_grid))
 
     return(aoi_grid)
 

@@ -166,6 +166,23 @@ test_that("filter_traj works", {
             return(nrow(res_df) == nrow(data_df))
         }))
     )
+    expect_true(
+        all(sapply(df_ls, function(data_df) {
+            res_df <- filter_traj(data_df,
+                                  traj_min_lat = -Inf,
+                                  traj_max_lat = Inf)
+            return(nrow(res_df) == nrow(data_df))
+        }))
+    )
+    expect_true(
+        all(sapply(df_ls, function(data_df) {
+            res_df <- filter_traj(data_df,
+                                  traj_min_height = -Inf,
+                                  traj_max_height = Inf)
+            return(nrow(res_df) == nrow(data_df))
+        }))
+    )
+
 
     expect_true(
         all(sapply(df_ls, function(data_df) {

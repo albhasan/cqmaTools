@@ -12,21 +12,25 @@ build_grid(
   min_lat,
   max_lat,
   grid_resolution,
-  crs
+  crs,
+  grid_id = "grid_id"
 )
 }
 \arguments{
 \item{origin_lon, origin_lat}{a numeric(1). Coordinate of origin.}
 
-\item{min_lon, max_lon}{a numeric. Grid's mininum and maximum longitude
+\item{min_lon, max_lon}{a numeric(1). Grid's mininum and maximum longitude
 value.}
 
-\item{min_lat, max_lat}{a numeric. Grid's mininum and maximum latitudes
+\item{min_lat, max_lat}{a numeric(1). Grid's mininum and maximum latitudes
 values.}
 
-\item{grid_resolution}{A numeric. Grid's resolution.}
+\item{grid_resolution}{a numeric. Grid's resolution.}
 
-\item{crs}{A numeric. Coordinate reference system (EPSG).}
+\item{crs}{a numeric(1). Coordinate reference system (EPSG).}
+
+\item{grid_id}{a character(1). The name for the columns with the identifier
+for each cell in the grid.}
 }
 \value{
 an sf object (polygon).
