@@ -83,6 +83,13 @@ test_that("filter_data_frames works", {
         max = r[2]
     )
     expect_true(length(filter_ls) == length(df_ls))
+    filter_ls <- filter_data_frames(
+        x = df_ls,
+        cname = "X1",
+        min = -Inf,
+        max = Inf
+    )
+    expect_true(length(filter_ls) == length(df_ls))
 
     # Error: The given column doesn't exist.
     expect_error(
@@ -120,6 +127,13 @@ test_that("filter_data_frames works", {
         cname = "X1",
         min = 0,
         max = 0
+    )
+    expect_true(length(filter_ls) == 0)
+    filter_ls <- filter_data_frames(
+        x = df_ls,
+        cname = "X1",
+        min = Inf,
+        max = -Inf 
     )
     expect_true(length(filter_ls) == 0)
 

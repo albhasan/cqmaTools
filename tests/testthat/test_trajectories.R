@@ -123,6 +123,92 @@ test_that("intersect_trajectories works", {
     sf::st_geometry(limit) <- 
     sf::st_sfc(sf::st_linestring(limit_mt, dim = "XY"), crs = 4326)
 
-    #intersect_trajectories(traj_df, limit = limit, crs = 4326)
+    # TODO: intersect_trajectories(traj_df, limit = limit, crs = 4326)
 
 })
+
+
+
+test_that("filter_traj works", {
+
+    files <- list.files(
+        path = system.file("extdata", "trajectories", package = "cqmaTools"),
+        pattern = "*",
+        full.names = TRUE,
+        recursive = TRUE
+    )
+    if (length(files) > 10)
+        files <- files[sample(1:length(files))[1:10]]
+
+    df_ls <- files2df(
+        files = files,
+        header = FALSE,
+        skip = 7,
+        cnames = HYSPLIT.COLNAMES
+    )
+
+    expect_true(
+        all(sapply(df_ls, function(data_df) {
+            ft_row <- sort(sample(1:nrow(data_df), size = 2))
+            res_df <- filter_traj(data_df,
+                                  from_row = ft_row[1],
+                                  to_row = ft_row[2])
+            return(nrow(res_df) == ft_row[2] - ft_row[1] + 1)
+        }))
+    )
+
+    # Test filter letting pass everything.
+    expect_true(
+        all(sapply(df_ls, function(data_df) {
+            res_df <- filter_traj(data_df,
+                                  traj_min_lon = -Inf,
+                                  traj_max_lon = Inf)
+            return(nrow(res_df) == nrow(data_df))
+        }))
+    )
+
+    expect_true(
+        all(sapply(df_ls, function(data_df) {
+            # Test warning when no row meets the filter.
+            expect_warning(
+                filter_traj(data_df,
+                    traj_min_lon = Inf,
+                    traj_max_lon = -Inf)
+            )
+            suppressWarnings(
+                res_df <- filter_traj(data_df,
+                    traj_min_lon = Inf,
+                    traj_max_lon = -Inf)
+            )
+            return(any(all(is.na(res_df)), nrow(res_df) == 0))
+        }))
+    )
+
+    # Test filtering out all rows.
+    expect_warning(
+        filter_traj(df_ls,
+            traj_min_lon = Inf,
+            traj_max_lon = -Inf)
+    )
+    expect_true(all(suppressWarnings(is.na(
+        filter_traj(df_ls,
+            traj_min_lon = Inf,
+            traj_max_lon = -Inf)
+    ))))
+
+    # Test column missing from data frames.
+    expect_error(
+        filter_traj(df_ls,
+            clon = "fake_column",
+            traj_min_lon = Inf,
+            traj_max_lon = -Inf)
+    )
+
+    # Test default filter.
+    expect_equal(
+        sapply(filter_traj(df_ls), nrow), 
+        sapply(df_ls, nrow)
+    )
+
+})
+
