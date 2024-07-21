@@ -22,9 +22,21 @@ grid_max_lat = 10
 # Filter trajectories by height in their filename.
 flask_max_height <- 1300
 
-# Filter trajectories' vertices by height.
+# Filter trajectories by coordinates.
+traj_min_height = -Inf
+traj_max_height = Inf
+traj_min_lon = -Inf
+traj_max_lon = Inf
+traj_min_lat = -Inf
+traj_max_lat = Inf
+
+# Filter by trajectories' vertices.
 vert_min_height <- -Inf
 vert_max_height <- 1300
+vert_min_lon = -Inf
+vert_max_lon = Inf
+vert_min_lat = -Inf
+vert_max_lat = Inf
 
 # Filter trajectories by the percentage of their vertices in height range.
 min_per_vert_in_hrange <- 0.0
@@ -34,6 +46,11 @@ skip = 7
 start_row = 1
 end_row = 48
 
+# Plot parameters.
+plot_min_lon = -80
+plot_max_lon = -30
+plot_min_lat = -40
+plot_max_lat = 10
 
 
 #---- Load code ----
@@ -51,6 +68,7 @@ rm(required_packages)
 
 #---- Utility functions ----
 
+# TODO: Convert into package function. Save map data as part of the package.
 plot_influence_area <- function(r,
                                 r_range = range(r[]),
                                 r_col = terra::map.pal("viridis", 100),
@@ -119,15 +137,27 @@ plot_influence_area <- function(r,
 
 
 # Util function for processing trajectories from each period.
-aoi_fn <- function(x, grid_sf, skip, from_row, to_row, vert_min_height,
+aoi_fn <- function(x, grid_sf, skip, from_row, to_row, 
+                   clon, clat, cheight, vert_min_height,
                    vert_max_height, vert_min_lon, vert_max_lon, vert_min_lat,
-                   vert_max_lat, min_per_vert_in_hrange) {
-    return(compute_frequency_grid(files = x[["filepath"]], grid_sf = grid_sf,
+                   vert_max_lat, min_per_vert_in_hrange,
+                   traj_min_height, traj_max_height,
+                   traj_min_lon, traj_max_lon,
+                   traj_min_lat, traj_max_lat) {
+    freq_grid <- compute_frequency_grid(files = x[["filepath"]],
+        grid_sf = grid_sf,
         skip = skip, from_row = from_row, to_row = to_row,
+        clon = clon, clat = clat, cheight = cheight,
         vert_min_height = vert_min_height, vert_max_height = vert_max_height,
         vert_min_lon = vert_min_lon, vert_max_lon = vert_max_lon,
         vert_min_lat = vert_min_lat, vert_max_lat = vert_max_lat,
-        min_per_vert_in_hrange = min_per_vert_in_hrange))
+        min_per_vert_in_hrange = min_per_vert_in_hrange,
+        traj_min_height = traj_min_height, traj_max_height = traj_max_height,
+        traj_min_lon = traj_min_lon, traj_max_lon = traj_max_lon,
+        traj_min_lat = traj_min_lat, traj_max_lat = traj_max_lat)
+    if (is.na(freq_grid))
+        warning("Empty frequency grid!")
+    return(freq_grid)
 }
 
 
@@ -172,12 +202,23 @@ process_period <- function(m_period, split_by) {
     traj_df_ls <- traj_df_ls[n_trajs > 0]
 
     # Do the thing.
-    aoi_ls <- lapply( traj_df_ls, aoi_fn, grid_sf = grid_sf, skip = skip,
+    aoi_ls <- lapply(
+        traj_df_ls, aoi_fn, grid_sf = grid_sf, skip = skip,
         from_row = start_row, to_row = end_row,
+        clon = "lon", clat = "lat", cheight = "height",
         vert_min_height = vert_min_height, vert_max_height = vert_max_height,
         vert_min_lon = grid_min_lon, vert_max_lon = grid_max_lon,
-        vert_min_lat = grid_min_lat, vert_max_lat = grid_max_lat, 
-        min_per_vert_in_hrange = min_per_vert_in_hrange)
+        vert_min_lat = grid_min_lat, vert_max_lat = grid_max_lat,
+        min_per_vert_in_hrange = min_per_vert_in_hrange,
+        traj_min_height = traj_min_height, traj_max_height = traj_max_height,
+        traj_min_lon = traj_min_lon, traj_max_lon = traj_max_lon,
+        traj_min_lat = traj_min_lat, traj_max_lat =traj_max_lat
+    )
+
+
+
+
+
 
     # Cast grids to rasters.
     aoi_ls <- lapply(aoi_ls, FUN = grid_to_raster,
@@ -202,8 +243,8 @@ process_period <- function(m_period, split_by) {
             aoi_ls[[pname]],
             r_range = r_range,
             r_col = terra::map.pal("viridis", 100),
-            x_range = c(grid_min_lon, grid_max_lon),
-            y_range = c(grid_min_lat, grid_max_lat),
+            x_range = c(plot_min_lon, plot_max_lon),
+            y_range = c(plot_min_lat, plot_max_lat),
             add_countries = TRUE,
             ctr_color = "black",
             ctr_lwd = 2.0,
