@@ -5,8 +5,6 @@
 # each trajectory reach the sea at some point. We 're intereted ONLY in the first point
 # for each trajectory' point-over-the-sea, we interpolate a gas concentration
 
-#---- TODO: ----
-
 #---- BACKGROUND ----
 
 
@@ -22,6 +20,7 @@
 #' @return         A data frame with one row for each file and 2 columns: The trajectories' path and a boolean indicating if they meet the test
 #' @export
 filterTrajHeight <- function(file.vec, above, cnames){
+    stop("DEPRECATED. Use filter_traj")
   # check trajectories' height and make a vector of those to keep
   #cnames <- HYSPLIT.COLNAMES                                                    # column names of the input file    
   file.dat.list <- files2df(files = file.vec, header = FALSE, 
