@@ -140,3 +140,143 @@ format_traj_names <- function(traj_names,
 
 }
 
+
+#' Filter trajectories
+#'
+#' @description
+#' Filter the trajectories in the given list of data frame and bind them into
+#' a single data frame.
+#'
+#' @param traj Either a data frame or a list of them. Each data frame contains
+#'   data of a single trajectory.
+#' @param from_row,to_row a numeric(1). Use a subset of rows from each data
+#'   frame.
+#' @param clon,clat,cheight a character(1). Names of the longitude, latitude,
+#'   and height columns in the given data frame.
+#' @param traj_min_lon,traj_max_lon,traj_min_lat,traj_max_lat,traj_min_height,traj_max_height 
+#'   a numeric(1). Remove trajectories which, at some vertex, fall outside of
+#'   these ranges.
+#' @param vert_min_lon,vert_max_lon,vert_min_lat,vert_max_lat,vert_min_height,vert_max_height
+#'   a numeric(1). Remove vertices from trajectories falling outside of these
+#'   ranges.
+#' @param min_per_vert_in_hrange a double(1). Minimum percentage of vertices
+#'   inside height range for a trajectory to be valid.
+#'
+#' @return Either a data frame or a list ot them.
+#'
+filter_traj <- function(traj, 
+                        from_row = 1, to_row = Inf,
+                        clon = "lon", clat = "lat", cheight = "height",
+                        traj_min_lon    = -Inf, traj_max_lon    = Inf,
+                        traj_min_lat    = -Inf, traj_max_lat    = Inf,
+                        traj_min_height = -Inf, traj_max_height = Inf,
+                        vert_min_lon    = -Inf, vert_max_lon    = Inf,
+                        vert_min_lat    = -Inf, vert_max_lat    = Inf,
+                        vert_min_height = -Inf, vert_max_height = Inf,
+                        min_per_vert_in_hrange = 0) {
+
+    if (is.data.frame(traj)) {
+
+        # Filter number of rows in data frame.
+        if (!all(from_row == 1, to_row == Inf)) {
+            traj <- traj[from_row:to_row, ]
+        }
+
+        # Filter trajectories by their vertex percentage in height range.
+        if (min_per_vert_in_hrange > 0) {
+            # Compute percentage of vertices in the range from traj_min_height
+            # to traj_max_height.
+            per_vert_in_range <- sum(traj[[cheight]] >= traj_min_height &
+                                     traj[[cheight]] <= traj_max_height) / 
+                                 nrow(traj)
+            if(per_vert_in_range < min_per_vert_in_hrange)
+                return(traj[rep(FALSE, times = nrow(traj)),])
+        }
+
+        # Filter data frames (trajectories) by height, longitude, and latitude.
+        if (!all(traj_min_height == -Inf, traj_max_height == Inf)) {
+            traj <- filter_data_frames(x = traj,
+                cname = cheight,
+                min = traj_min_height,
+                max = traj_max_height)
+            if (any(all(is.na(traj)), nrow(traj) == 0)) {
+                warning("No trajectory meets the height filter!")
+                return(traj)
+            }
+        }
+
+        if (!all(traj_min_lon == -Inf, traj_max_lon == Inf)) {
+            traj <- filter_data_frames(x = traj,
+                cname = clon,
+                min = traj_min_lon,
+                max = traj_max_lon)
+            if (any(all(is.na(traj)), nrow(traj) == 0)) {
+                warning("No trajectory meets the longitude filter!")
+                return(traj)
+            }
+        }
+
+        if (!all(traj_min_lat == -Inf, traj_max_lat == Inf)) {
+            traj <- filter_data_frames(x = traj,
+                cname = clat,
+                min = traj_min_lat,
+                max = traj_max_lat)
+            if (any(all(is.na(traj)), nrow(traj) == 0)) {
+                warning("No trajectory meets the latitude filter!")
+                return(traj)
+            }
+        }
+
+        # Filter trajectories' vertices by height, longitude, and latitude.
+        if (!all(vert_min_height == -Inf, vert_max_height == Inf))
+        traj<- traj[traj[[cheight]] >= vert_min_height &
+        traj[[cheight]] <= vert_max_height,]
+        if (nrow(traj) == 0) {
+            warning("No trajectory vertex meets the height filter!")
+            return(traj)
+        }
+
+        if (!all(vert_min_lon == -Inf, vert_max_lon == Inf))
+        traj<- traj[traj[[clon]] >= vert_min_lon &
+        traj[[clon]] <= vert_max_lon,]
+        if (nrow(traj) == 0) {
+            warning("No trajectory vertex meets the longitude filter!")
+            return(traj)
+        }
+
+        if (!all(vert_min_lat == -Inf, vert_max_lat == Inf)) {
+            traj<- traj[traj[[clat]] > vert_min_lat &
+                        traj[[clat]] < vert_max_lat,]
+        }
+
+        if (nrow(traj) == 0) {
+            warning("No trajectory vertex meets the longitude filter!")
+            return(traj)
+        }
+
+        return(traj)
+
+    } else if (is.list(traj)) {
+        return(lapply(traj, filter_traj,
+            from_row = from_row, to_row = to_row,
+            min_per_vert_in_hrange = min_per_vert_in_hrange,
+            clon = clon, clat = clat, cheight = cheight,
+            traj_min_height = traj_min_height,
+            traj_max_height = traj_max_height,
+            traj_min_lon = traj_min_lon,
+            traj_max_lon = traj_max_lon,
+            traj_min_lat = traj_min_lat,
+            traj_max_lat = traj_max_lat,
+            vert_min_height = vert_min_height,
+            vert_max_height = vert_max_height,
+            vert_min_lon = vert_min_lon,
+            vert_max_lon = vert_max_lon,
+            vert_min_lat = vert_min_lat,
+            vert_max_lat = vert_max_lat
+        ))
+    } else {
+        stop("Unknown object type!")
+    }
+
+}
+

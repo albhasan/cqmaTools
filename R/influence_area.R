@@ -34,20 +34,19 @@ compute_frequency_grid <- function(files,
                                    clat = "lat",
                                    cheight = "height",
                                    crs = 4326,
-                                   traj_min_lon = -Inf, 
+                                   traj_min_lon = -Inf,
                                    traj_max_lon = Inf,
-                                   traj_min_lat = -Inf, 
+                                   traj_min_lat = -Inf,
                                    traj_max_lat = Inf,
-                                   traj_min_height = -Inf, 
+                                   traj_min_height = -Inf,
                                    traj_max_height = Inf,
-                                   vert_min_lon = -Inf, 
+                                   vert_min_lon = -Inf,
                                    vert_max_lon = Inf,
-                                   vert_min_lat = -Inf, 
+                                   vert_min_lat = -Inf,
                                    vert_max_lat = Inf,
-                                   vert_min_height = -Inf, 
+                                   vert_min_height = -Inf,
                                    vert_max_height = Inf,
-                                   min_per_vert_in_hrange = 0
-                                   ) {
+                                   min_per_vert_in_hrange = 0) {
 
     stopifnot("No files given!" = length(files) > 0)
     stopifnot("`height`, `lon`, or `lat` columns not found in data frame!" = 
@@ -72,93 +71,27 @@ compute_frequency_grid <- function(files,
         cnames = cnames
     )
 
-    # Filter number of rows in data frame.
-    if (!all(from_row == 1, to_row == Inf)) {
-        data_df_ls <- lapply(data_df_ls, function(x) {
-            return(x[from_row:to_row,])
-        })
-    }
-
-    # Filter trajectories by their vertex percentage in height range.
-    if (min_per_vert_in_hrange > 0) {
-        # Compute percentage of vertices in the range from traj_min_height to
-        # traj_max_height for each trajectory.
-        per_vert_in_range <- vapply(
-            data_df_ls,
-            function(x) {
-                sum(
-                    x[[cheight]] >= traj_min_height &
-                    x[[cheight]] <= traj_max_height
-                ) / nrow(x)
-            },
-            double(1)
-        )
-        data_df_ls <-data_df_ls[per_vert_in_range >= min_per_vert_in_hrange]
-    }
-
-    # Filter data frames (trajectories) by height, longitude, and latitude.
-    data_df_ls <- filter_data_frames(x = data_df_ls,
-                                     cname = cheight,
-                                     min = traj_min_height,
-                                     max = traj_max_height)
-    if (length(data_df_ls) == 0) {
-        warning("No trajectory meets the height filter!")
-        return(NA)
-    }
-
-    data_df_ls <- filter_data_frames(x = data_df_ls,
-                                     cname = clon,
-                                     min = traj_min_lon,
-                                     max = traj_max_lon)
-    if (length(data_df_ls) == 0) {
-        warning("No trajectory meets the longitude filter!")
-        return(NA)
-    }
-
-    data_df_ls <- filter_data_frames(x = data_df_ls,
-                                     cname = clat,
-                                     min = traj_min_lat,
-                                     max = traj_max_lat)
-    if (length(data_df_ls) == 0) {
-        warning("No trajectory meets the latitude filter!")
-        return(NA)
-    }
+    # Filter trajectories.
+    traj_ls <- filter_traj(data_df_ls, from_row = from_row, to_row = to_row,
+        clon = clon, clat = clat, cheight = cheight,
+        traj_min_lon = traj_min_lon, traj_max_lon = traj_max_lon,
+        traj_min_lat = traj_min_lat, traj_max_lat = traj_max_lat,
+        traj_min_height = traj_min_height, traj_max_height = traj_max_height,
+        vert_min_lon = vert_min_lon, vert_max_lon = vert_max_lon,
+        vert_min_lat = vert_min_lat, vert_max_lat = vert_max_lat,
+        vert_min_height = vert_min_height, vert_max_height = vert_max_height,
+        min_per_vert_in_hrange = min_per_vert_in_hrange)
 
     # Bind data frames into one.
-    hysplit_df <- do.call(rbind, data_df_ls)
-    if (nrow(hysplit_df) == 0) {
+    traj_df <- do.call(rbind, traj_ls)
+    if (nrow(traj_df) == 0) {
         warning("Empty data frame!")
         return(NA)
     }
 
-    # Filter trajectories' vertices by height, longitude, and latitude.
-    if (!all(vert_min_height == -Inf, vert_max_height == Inf))
-        hysplit_df <- hysplit_df[hysplit_df[[cheight]] > vert_min_height &
-                                 hysplit_df[[cheight]] < vert_max_height,]
-    if (nrow(hysplit_df) == 0) {
-        warning("No trajectory vertex meets the height filter!")
-        return(NA)
-    }
-
-    if (!all(vert_min_lon == -Inf, vert_max_lon == Inf))
-        hysplit_df <- hysplit_df[hysplit_df[[clon]] > vert_min_lon &
-                                 hysplit_df[[clon]] < vert_max_lon,]
-    if (nrow(hysplit_df) == 0) {
-        warning("No trajectory vertex meets the longitude filter!")
-        return(NA)
-    }
-
-    if (!all(vert_min_lat == -Inf, vert_max_lat == Inf))
-        hysplit_df <- hysplit_df[hysplit_df[[clat]] > vert_min_lat &
-                                 hysplit_df[[clat]] < vert_max_lat,]
-    if (nrow(hysplit_df) == 0) {
-        warning("No trajectory vertex meets the longitude filter!")
-        return(NA)
-    }
-
     # Build a sf object (point) using the trajectories' vertices.
-    hysplit_sf <- sf::st_as_sf(
-        x = hysplit_df, 
+    traj_sf <- sf::st_as_sf(
+        x = traj_df,
         coords = c(clon, clat), 
         crs = crs
     )
@@ -167,12 +100,12 @@ compute_frequency_grid <- function(files,
     # NOTE: s2 is slow at running st_intersection.
     s2 <- sf::sf_use_s2()
     suppressMessages({ sf::sf_use_s2(FALSE) })
-    sf::st_agr(hysplit_sf) <- sf::st_agr(grid_sf) <- "constant"
-    hysplit_sf <- sf::st_intersection(x = hysplit_sf, y = grid_sf)
+    sf::st_agr(traj_sf) <- sf::st_agr(grid_sf) <- "constant"
+    traj_sf <- sf::st_intersection(x = traj_sf, y = grid_sf)
     suppressMessages({ sf::sf_use_s2(s2) })
 
     grid_traj_freq <- as.data.frame(table(
-        sf::st_drop_geometry(hysplit_sf)[["gid"]]
+        sf::st_drop_geometry(traj_sf)[["gid"]]
     ))
 
     colnames(grid_traj_freq) <- c("gid", "freq")
