@@ -73,74 +73,6 @@ rm(required_packages)
 
 #---- Utility functions ----
 
-# TODO: Convert into package function. Save map data as part of the package.
-plot_influence_area <- function(r,
-                                r_range = range(r[]),
-                                r_col = terra::map.pal("viridis", 100),
-                                x_range = c(-180, 180),
-                                y_range = c(-90, 90),
-                                add_countries = TRUE,
-                                ctr_color = "black",
-                                ctr_lwd = 2.0,
-                                add_states = TRUE, 
-                                stt_color = "gray",
-                                stt_lwd = 1.0,
-                                add_biomes = TRUE,
-                                bms_color = "green",
-                                bms_lwd = 0.5, 
-                                plot_title = "",
-                                save_plots = FALSE,
-                                plot_width = 480,
-                                plot_height = 480) {
-
-    plot_fname <- NA
-    plot2file <- FALSE
-    if (save_plots == TRUE)
-        save_plots <- getwd()
-
-    if (is.character(save_plots)) 
-        if (dir.exists(save_plots))
-            plot2file <- TRUE
-
-    if (plot2file) {
-        plot_fname <- file.path(out_dir, paste0( "plot_aoi_",
-            gsub(pattern = "[.]", replacement = "_", plot_title), ".png"))
-        grDevices::png(
-            filename = plot_fname, 
-            width = plot_width, 
-            height = plot_height
-        )
-    }
-
-    plot(r, range = r_range, xlim = x_range, ylim = y_range,
-         main = plot_title, col = r_col)
-
-    if (add_biomes) {
-        biomes_br <- geobr::read_biomes()
-        biomes_br <- sf::st_transform(biomes_br, crs = terra::crs(r))
-        plot(biomes_br[["geom"]], border = bms_color, lwd = bms_lwd,
-             type = "l", add = TRUE)
-    }
-
-    if (add_states) {
-        states_br <- geobr::read_state()
-        states_br <- sf::st_transform(states_br, crs = terra::crs(r))
-        plot(states_br[["geom"]], border = stt_color, lwd = stt_lwd, 
-             type = "l", add = TRUE)
-    }
-
-    if (add_countries) 
-        maps::map("world", lwd = ctr_lwd, col = ctr_color, add = TRUE)
-
-    if (plot2file)
-        dev.off()
-
-    invisible(plot_fname)
-
-}
-
-
-
 # Util function for processing trajectories from each period.
 aoi_fn <- function(x, grid_sf, skip,
                    from_row, to_row,
@@ -263,8 +195,8 @@ process_season_traj <- function(m_period, split_by, files,
     # Plot
     r_range <- range(vapply(aoi_ls, function(x){range(x[], na.rm = TRUE)}, 
         numeric(2)))
-
     plot_files <- ""
+
     for (pname in names(aoi_ls)) {
         p_file <- plot_influence_area (
             aoi_ls[[pname]],
@@ -278,9 +210,9 @@ process_season_traj <- function(m_period, split_by, files,
             add_states = TRUE, 
             stt_color = "gray",
             stt_lwd = 1.0,
-            add_biomes = TRUE,
-            bms_color = "green",
-            bms_lwd = 0.5, 
+            # add_biomes = TRUE,
+            # bms_color = "green",
+            # bms_lwd = 0.5, 
             plot_title = pname,
             save_plots = out_dir,
             plot_width = 960,
@@ -293,7 +225,7 @@ process_season_traj <- function(m_period, split_by, files,
 
 }
 
-# Compute areas of influence by year and sub-yearly periods.
+# Compute areas of influence by year and sub-yearly seasons.
 plot_files <- character(0)
 for (m_period in list(YEAR.TRIMESTERS, YEAR.SEMESTERS, YEAR.YEAR)) {
     m_period <- unlist(m_period)

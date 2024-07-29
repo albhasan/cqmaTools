@@ -7,18 +7,18 @@
 intersect_trajectories(traj_ls, limit, crs = 4326, row_after = TRUE)
 }
 \arguments{
-\item{traj_ls}{A list of data frames. Eacha data frame represents a
+\item{traj_ls}{a list of data frames. Eacha data frame represents a
 trajectory.}
 
-\item{limit}{An sf object. A limit.}
+\item{limit}{an sf object (line). A limit.}
 
-\item{crs}{A numeric. The EPSG code of the trajectories.}
+\item{crs}{a numeric. The EPSG code of the trajectories.}
 
-\item{row_after}{A logical. Should we return the id of the row after the
+\item{row_after}{a logical. Should we return the id of the row after the
 limit? If no, return the row id before the limit.}
 }
 \value{
-A numeric indicating a row id for each trajectory in the input list.
+a numeric indicating a row id for each trajectory in the input list.
 }
 \description{
 Identify trajectories' segments that cross a limit.

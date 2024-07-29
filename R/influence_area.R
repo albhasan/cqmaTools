@@ -69,3 +69,92 @@ compute_frequency_grid <- function(traj_df,
 
 }
 
+#' Plot influence area
+#'
+#' @description
+#' Plot the given influence area (a raster).
+#'
+#' @param r a raster. The area of influence.
+#' @param r_range a numeric(2). The range of values used during plot.
+#' @param r_col a color palette for mapping. See [terra::map.pal].
+#' @param x_range,y_range a numeric(2). The plot range in x and y.
+#' @param add_countries a logical(1). Should countries' borderds be added?
+#' @param ctr_color a character(1). Color name used to plot the countries.
+#' @param ctr_lwd a numeric(1). Line width used to plot the countries.
+#' @param add_states a logical(1). Should we add the states to the plot?
+#' @param stt_color a character(1). Color name for the Brazilian states.
+#' @param stt_lwd a numeric(1). Line width for the Brazilian states.
+#' @param plot_title a character(1). Title of the plot.
+#' @param save_plots either a logical(1) or a character(1). Should the plot be
+#'   saved to files? If so, a path to a directory should be provided,
+#'   otherwise, the current directory is used. The file name is taken from
+#'   `plot_title`.
+#' @param plot_width,plot_height a numeric(1). Size of the plot.
+#'
+#' @param a character. The path to the files created.
+#'
+#' @export
+#'
+plot_influence_area <- function(r,
+                                r_range = range(r[]),
+                                r_col = terra::map.pal("viridis", 100),
+                                x_range = c(-180, 180),
+                                y_range = c(-90, 90),
+                                add_countries = TRUE,
+                                ctr_color = "black",
+                                ctr_lwd = 2.0,
+                                add_states = TRUE, 
+                                stt_color = "gray",
+                                stt_lwd = 1.0,
+                                plot_title = "",
+                                save_plots = FALSE,
+                                plot_width = 480,
+                                plot_height = 480) {
+
+    stopifnot("Expected a `terra::rast` object!" =
+        inherits(r, what = "SpatRaster"))
+
+    plot_fname <- NA
+    plot2file <- FALSE
+    if (save_plots == TRUE)
+        save_plots <- getwd()
+
+    if (is.character(save_plots)) 
+        if (dir.exists(save_plots))
+            plot2file <- TRUE
+
+    if (plot2file) {
+        plot_fname <- file.path(save_plots, paste0( "plot_aoi_",
+            gsub(pattern = "[.]", replacement = "_", plot_title), ".png"))
+        grDevices::png(
+            filename = plot_fname, 
+            width = plot_width, 
+            height = plot_height
+        )
+    }
+
+    terra::plot(x = r, range = r_range,
+         xlim = x_range, ylim = y_range,
+         main = plot_title, col = r_col)
+
+    if (add_states) {
+        states_sf <- sf::st_transform(states_sf, crs = terra::crs(r))
+        states_sf <- states_sf[[get_geom_colname(states_sf)]]
+        plot(states_sf, border = stt_color, lwd = stt_lwd, 
+             type = "l", add = TRUE)
+    }
+
+    if (add_countries) {
+        countries_sf <- sf::st_transform(countries_sf, crs = terra::crs(r))
+        countries_sf <- countries_sf[[get_geom_colname(countries_sf)]]
+        plot(countries_sf, border = ctr_color, lwd = ctr_lwd, 
+             type = "l", add = TRUE, xlim = x_range, ylim = y_range)
+    }
+
+    if (plot2file)
+        grDevices::dev.off()
+
+    invisible(plot_fname)
+
+}
+

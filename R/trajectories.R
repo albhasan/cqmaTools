@@ -4,14 +4,14 @@
 #'
 #' @description Identify trajectories' segments that cross a limit.
 #
-#' @param traj_ls A list of data frames. Eacha data frame represents a
+#' @param traj_ls a list of data frames. Eacha data frame represents a
 #' trajectory.
-#' @param limit An sf object. A limit.
-#' @param crs A numeric. The EPSG code of the trajectories.
-#' @param row_after A logical. Should we return the id of the row after the 
+#' @param limit an sf object (line). A limit.
+#' @param crs a numeric. The EPSG code of the trajectories.
+#' @param row_after a logical. Should we return the id of the row after the 
 #' limit? If no, return the row id before the limit.
 #'
-#' @return A numeric indicating a row id for each trajectory in the input list.
+#' @return a numeric indicating a row id for each trajectory in the input list.
 #'
 #' @export
 #'

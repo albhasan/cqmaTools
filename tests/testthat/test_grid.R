@@ -106,6 +106,7 @@ test_that("grid_to_raster works", {
     lat_max = 12
     res = 0.5 
     srs = 4326
+
     g_sf <- build_grid(origin_lon = lon_o, origin_lat = lat_o,
         min_lon = lon_min, max_lon = lon_max, min_lat = lat_min,
         max_lat = lat_max, grid_resolution = res, crs = 4326)

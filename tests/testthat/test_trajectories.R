@@ -108,22 +108,48 @@ test_that("get_trajectory_metadata works", {
 
 test_that("intersect_trajectories works", {
 
-    traj_df <- data.frame(
-        V1 = rep(1, 5), V2 = rep(1, 5), year = 21, month = 1, day = 3, 
-        hour = rev(0:4), min = 0, V8 = rep(0, 5), V9 = rep(0, 5),
-        lat = seq(-0, 10, length.out = 5), 
-        lon = seq(-70, -60, length.out = 5), 
-        height = rnorm(5, mean = 200, sd = 20),
-        pressure = rnorm(5, mean = 950, sd = 10)
+    n_rows <- 5
+    no_cross <- data.frame(
+        V1 = rep(1, n_rows),
+        V2 = rep(1, n_rows),
+        year = 21, month = 1, day = 3, 
+        hour = rev(0:(n_rows - 1)),
+        min = 0, 
+        V8 = rep(0, n_rows),
+        V9 = rep(0, n_rows),
+        lat = seq(0, 10, length.out = n_rows),
+        lon = seq(-20, -10, length.out = n_rows), 
+        height = rnorm(n_rows, mean = 200, sd = 20),
+        pressure = rnorm(n_rows, mean = 950, sd = 10)
     )
 
-    limit_mt <- matrix(c(-69, 20, -69, 18), ncol = 2, byrow = TRUE,
+    cross <- data.frame(
+        V1 = rep(1, n_rows),
+        V2 = rep(1, n_rows),
+        year = 21, month = 1, day = 3, 
+        hour = rev(0:(n_rows - 1)),
+        min = 0, 
+        V8 = rep(0, n_rows),
+        V9 = rep(0, n_rows),
+        lat = seq(0, 10, length.out = n_rows),
+        lon = seq(-1, 20, length.out = n_rows), 
+        height = rnorm(n_rows, mean = 200, sd = 20),
+        pressure = rnorm(n_rows, mean = 950, sd = 10)
+    )
+
+    limit_mt <- matrix(c(0, -50, 0, 50), ncol = 2, byrow = TRUE,
         dimnames = list(NULL, c("lon", "lat")))
     limit <- data.frame(id = 1)
     sf::st_geometry(limit) <- 
-    sf::st_sfc(sf::st_linestring(limit_mt, dim = "XY"), crs = 4326)
+        sf::st_sfc(sf::st_linestring(limit_mt, dim = "XY"), crs = 4326)
 
-    # TODO: intersect_trajectories(traj_df, limit = limit, crs = 4326)
+    res <- intersect_trajectories(
+        list(no_cross, cross), 
+        limit = limit,
+        crs = 4326
+    )
+    expect_equal(res[1], expected = 0)
+    expect_true(res[2] > 0)
 
 })
 
