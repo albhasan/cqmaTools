@@ -91,7 +91,7 @@ compute_frequency_grid <- function(traj_df,
 #'   `plot_title`.
 #' @param plot_width,plot_height a numeric(1). Size of the plot.
 #'
-#' @param a character. The path to the files created.
+#' @return a character. The path to the files created.
 #'
 #' @export
 #'
