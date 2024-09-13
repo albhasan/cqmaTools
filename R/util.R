@@ -1,7 +1,6 @@
 # util.R
 
 #---- TODO ----
-# - Check .removeHeader VS .removeHeaders
 # - Check if .inInterval could be replaced by findInterval
 
 #---- Checked ----
@@ -78,24 +77,33 @@ df2text <- function(a.df){
 
 
 
-# Test in which interval are the given value 
-#
-# @param val  A numeric vector of the values to test
-# @param vec  A numeric vector with the limits of the consecutive intervals. Its length must be greater than 1
-# @return     A boolean matrix. The columns represent the interval's limits (vec) and the rows the values (val). The number of intervals is the number of element in vec minus one
-.inInterval <- function(val, vec){
-  # TODO: replace by findInterval {base}
-  if(is.null(val)){return(matrix(ncol = 2, nrow = 0))}
-  int.mat <- matrix(NA, ncol = 2, nrow = length(vec) - 1, byrow = TRUE) # interval matrix
-  # build a test matrix
-  for(i in 2:length(vec)){
-    int.mat[i - 1, ] <- c(vec[i - 1], vec[i])
-  }
-  res <- lapply(val, function(x, mat){return(x >= mat[, 1] & x <= mat[, 2])}, mat = int.mat)
-  res <- matrix(unlist(res), ncol = nrow(int.mat), nrow = length(val), byrow = TRUE)
-  colnames(res) <- paste(rep("int", nrow(int.mat)), 1:nrow(int.mat), sep = "")
-  rownames(res) <- paste(rep("val", length(val)), 1:length(val), sep = "")
-  return(res)
+#' Test in which interval are the given values
+#'
+#' @description
+#' Test in which interval are the given values
+#'
+#' @param val  a numeric vector of the values to test.
+#' @param vec  a numeric vector with the limits of the consecutive intervals.
+#'   Its length must be greater than 1.
+#'
+#' @return a boolean matrix. The columns represent the interval's limits (vec)
+#' and the rows the values (val). The number of intervals is the number of
+#' element in vec minus one
+#'
+in_interval <- function(val, vec){
+    stop("DEPRECATED. Use base::findInterval")
+
+    if(is.null(val)){return(matrix(ncol = 2, nrow = 0))}
+    int.mat <- matrix(NA, ncol = 2, nrow = length(vec) - 1, byrow = TRUE) # interval matrix
+    # build a test matrix
+    for(i in 2:length(vec)){
+      int.mat[i - 1, ] <- c(vec[i - 1], vec[i])
+    }
+    res <- lapply(val, function(x, mat){return(x >= mat[, 1] & x <= mat[, 2])}, mat = int.mat)
+    res <- matrix(unlist(res), ncol = nrow(int.mat), nrow = length(val), byrow = TRUE)
+    colnames(res) <- paste(rep("int", nrow(int.mat)), 1:nrow(int.mat), sep = "")
+    rownames(res) <- paste(rep("val", length(val)), 1:length(val), sep = "")
+    return(res)
 }
 
 
@@ -121,31 +129,6 @@ df2text <- function(a.df){
 
 
 
-#' @title Remove header from files
-#' @name removeHeaders
-#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
-#'
-#' @description Remove header from files
-#'
-#' @param file.vec A character vector. The paths to the input files
-#' @param path.out A length-1 character. The path to the folder for storing the resulting files
-#' @param skip     A length-1 numeric. Number of lines to remove from the beginning of each file
-#' @param cnames   A character. The names of the columns of the returned data frame
-#' @return         A list of paths to the created files
-#' @export
-removeHeaders <- function(file.vec, path.out, skip, cnames){
-  #cnames <- HYSPLIT.COLNAMES                                                    # column names of hysplit files
-  file.dat.list <- files2df(files = file.vec,  header = FALSE, 
-                            skip = skip, cnames = cnames)
-  res <- list()
-  for (i in 1:length(file.dat.list)) {
-    file.dat <- file.dat.list[[i]]
-    newfile <- file.path(path.out, names(file.dat.list)[[i]], fsep = .Platform$file.sep)  
-    utils::write.table(file.dat, file = newfile, col.names = FALSE, row.names = FALSE, quote = FALSE)
-    res[[i]] <- newfile
-  }  
-  return(res)
-}
 
 
 
@@ -314,10 +297,12 @@ removeHeaders <- function(file.vec, path.out, skip, cnames){
 #' @return         A data.frame
 #' @export
 file2df <- function(file.in, header, skip, cnames){
+    stop("DEPRECATED. Use files2df instead")
   .file2df(file.in, header, skip, cnames)
 }
 
 .file2df <- function(file.in, header, skip, cnames){
+    stop("DEPRECATED. Use files2df instead")
   file.dat <- utils::read.table(file = file.in, sep = "", header = header, 
                                 skip = skip, stringsAsFactors = FALSE)
   if (!header)
@@ -957,10 +942,8 @@ add_na_df <- function(list_of_df){
 
 
 
-# functions used by new scripts
 
 #' @title Read a file and remove its header
-#' @name removeHeader
 #' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
 #'
 #' @description Read a file and remove its header
@@ -971,10 +954,37 @@ add_na_df <- function(list_of_df){
 #' @return          A data.frame
 #' @export
 removeHeader <- function(file_path, col_names, skip){
+    # TODO: Check removeHeaders
   file.dat <- utils::read.table(file = file_path, sep = "", header = FALSE, 
                                 skip = skip, stringsAsFactors = FALSE)
   colnames(file.dat) <- col_names
   return(file.dat)
+}
+
+#' @title Remove header from files
+#' @author Alber Sanchez, \email{alber.ipia@@inpe.br}
+#'
+#' @description Remove header from files
+#'
+#' @param file.vec A character vector. The paths to the input files
+#' @param path.out A length-1 character. The path to the folder for storing the resulting files
+#' @param skip     A length-1 numeric. Number of lines to remove from the beginning of each file
+#' @param cnames   A character. The names of the columns of the returned data frame
+#' @return         A list of paths to the created files
+#' @export
+removeHeaders <- function(file.vec, path.out, skip, cnames){
+    # TODO: Check removeHeader
+  #cnames <- HYSPLIT.COLNAMES                                                    # column names of hysplit files
+  file.dat.list <- files2df(files = file.vec,  header = FALSE, 
+                            skip = skip, cnames = cnames)
+  res <- list()
+  for (i in 1:length(file.dat.list)) {
+    file.dat <- file.dat.list[[i]]
+    newfile <- file.path(path.out, names(file.dat.list)[[i]], fsep = .Platform$file.sep)  
+    utils::write.table(file.dat, file = newfile, col.names = FALSE, row.names = FALSE, quote = FALSE)
+    res[[i]] <- newfile
+  }  
+  return(res)
 }
 
 
