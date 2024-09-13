@@ -144,8 +144,7 @@ format_traj_names <- function(traj_names,
 #' Filter trajectories
 #'
 #' @description
-#' Filter the trajectories in the given list of data frame and bind them into
-#' a single data frame.
+#' Filter the trajectories in the given list of data frames.
 #'
 #' @param traj Either a data frame or a list of them. Each data frame contains
 #'   data of a single trajectory.
@@ -193,7 +192,7 @@ filter_traj <- function(traj,
                 return(traj[rep(FALSE, times = nrow(traj)),])
         }
 
-        # Filter data frames (trajectories) by height, longitude, and latitude.
+        # Filter data frames (trajectories) by height.
         if (!all(traj_min_height == -Inf, traj_max_height == Inf)) {
             traj <- filter_data_frames(x = traj,
                 cname = cheight,
@@ -205,6 +204,7 @@ filter_traj <- function(traj,
             }
         }
 
+        # Filter data frames (trajectories) by longitude.
         if (!all(traj_min_lon == -Inf, traj_max_lon == Inf)) {
             traj <- filter_data_frames(x = traj,
                 cname = clon,
@@ -216,6 +216,7 @@ filter_traj <- function(traj,
             }
         }
 
+        # Filter data frames (trajectories) by latitude.
         if (!all(traj_min_lat == -Inf, traj_max_lat == Inf)) {
             traj <- filter_data_frames(x = traj,
                 cname = clat,
@@ -227,28 +228,28 @@ filter_traj <- function(traj,
             }
         }
 
-        # Filter trajectories' vertices by height, longitude, and latitude.
+        # Filter trajectories' vertices by height.
         if (!all(vert_min_height == -Inf, vert_max_height == Inf))
-        traj<- traj[traj[[cheight]] >= vert_min_height &
-        traj[[cheight]] <= vert_max_height,]
+            traj <- traj[traj[[cheight]] >= vert_min_height &
+                         traj[[cheight]] <= vert_max_height,]
         if (nrow(traj) == 0) {
             warning("No trajectory vertex meets the height filter!")
             return(traj)
         }
 
+        # Filter trajectories' vertices by longitude.
         if (!all(vert_min_lon == -Inf, vert_max_lon == Inf))
-        traj<- traj[traj[[clon]] >= vert_min_lon &
-        traj[[clon]] <= vert_max_lon,]
+            traj <- traj[traj[[clon]] >= vert_min_lon &
+                         traj[[clon]] <= vert_max_lon,]
         if (nrow(traj) == 0) {
             warning("No trajectory vertex meets the longitude filter!")
             return(traj)
         }
 
-        if (!all(vert_min_lat == -Inf, vert_max_lat == Inf)) {
-            traj<- traj[traj[[clat]] > vert_min_lat &
-                        traj[[clat]] < vert_max_lat,]
-        }
-
+        # Filter trajectories' vertices by latitude.
+        if (!all(vert_min_lat == -Inf, vert_max_lat == Inf))
+            traj <- traj[traj[[clat]] > vert_min_lat &
+                         traj[[clat]] < vert_max_lat,]
         if (nrow(traj) == 0) {
             warning("No trajectory vertex meets the longitude filter!")
             return(traj)
