@@ -49,6 +49,5 @@ inside height range for a trajectory to be valid.}
 Either a data frame or a list ot them.
 }
 \description{
-Filter the trajectories in the given list of data frame and bind them into
-a single data frame.
+Filter the trajectories in the given list of data frames.
 }

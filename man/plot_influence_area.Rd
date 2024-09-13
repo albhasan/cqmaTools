@@ -51,8 +51,9 @@ otherwise, the current directory is used. The file name is taken from
 \code{plot_title}.}
 
 \item{plot_width, plot_height}{a numeric(1). Size of the plot.}
-
-\item{a}{character. The path to the files created.}
+}
+\value{
+a character. The path to the files created.
 }
 \description{
 Plot the given influence area (a raster).
