@@ -42,6 +42,7 @@ listnames2dataframes <- function(df_ls, cname){
 #' @export
 #'
 files2df <- function(files, header, skip, cnames) {
+    warnings("This function is about to be deprecated!")
 
     if(length(files) == 0){
         warning("Empty list")
