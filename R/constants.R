@@ -4,10 +4,14 @@ HYSPLIT.COLNAMES <-
     "lat", "lon", "height", "pressure")
 
 # The name of the columns of the raw data file.
-RAW.DATA.COLNAMES <- c("site", "year", "month", "day", "hour", "min", "flask",
-                       "V8", "concentration", "flag", "V11", "ayear", "amonth",
-                       "aday", "ahour", "amin", "lat", "lon", "height",
-                       "eventnumber", "flat", "flon", "fheight")
+# RAW.DATA.COLNAMES 
+BRIEFCASE.COLNAMES <- c("site", "year", "month", "day", "hour", "min", "flask",
+                        "V8", "concentration", "flag", "V11", "ayear",
+                        "amonth", "aday", "ahour", "amin", "lat", "lon",
+                        "height", "eventnumber", "flat", "flon", "fheight")
+# BRIEFCASE.COLTYPES <- "ccccccccccccccccccccccc"
+#
+# stopifnot(length(BRIEFCASE.COLNAMES) == nchar(BRIEFCASE.COLTYPES))
 
 # Pattern of trajectories' filenames.
 TRAJECTORY.FILENAME.PATTERN = "^[a-zA-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+[.][0-9]+$"
