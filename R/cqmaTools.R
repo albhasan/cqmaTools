@@ -110,6 +110,7 @@ splitRawdata <- function(file.in, path.out, colname, keepFlags, cnames,
 #' @return                   A data.frame with one row for each file and 2 columns: The trajectories' path and a boolean indicating if they were kept
 #' @export
 trajreachthesea <- function(traj.intersections){
+    stop("DEPRECATED")
   file.vec <- unlist(traj.intersections[[1]])
   trajintersect.list <- traj.intersections[[2]]
   keep <- logical()
@@ -137,6 +138,7 @@ trajreachthesea <- function(traj.intersections){
 #' @return                   A data frame
 #' @export
 trajinbound <- function(traj.intersections, minx, maxx, miny, maxy){
+    stop("DEPRECATED")
   keep <- logical()
   file.vec <- unlist(traj.intersections[[1]])
   trajintersect.list <- traj.intersections[[2]]
