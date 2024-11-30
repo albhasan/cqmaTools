@@ -1,25 +1,27 @@
-# The name of the columns in the Hysplit files.
-HYSPLIT.COLNAMES <-
-  c("V1", "V2", "year", "month", "day", "hour", "min", "V8", "V9", 
-    "lat", "lon", "height", "pressure")
-
 # The name of the columns of the raw data file.
-# RAW.DATA.COLNAMES 
 BRIEFCASE.COLNAMES <- c("site", "year", "month", "day", "hour", "min", "flask",
                         "V8", "concentration", "flag", "V11", "ayear",
                         "amonth", "aday", "ahour", "amin", "lat", "lon",
                         "height", "eventnumber", "flat", "flon", "fheight")
-# BRIEFCASE.COLTYPES <- "ccccccccccccccccccccccc"
-#
-# stopifnot(length(BRIEFCASE.COLNAMES) == nchar(BRIEFCASE.COLTYPES))
 
 # Pattern of trajectories' filenames.
 TRAJECTORY.FILENAME.PATTERN = "^[a-zA-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+[.][0-9]+$"
 
-# Trajectory's column names and type.
-TRAJECTORY.COLNAMES = c(site = "character", year = "integer",
-                        month = "integer", day = "integer", hour = "integer",
-                        height = "double")
+# Name and type of the metadata embedded in trajectories' file names.
+# NOTE: It must match TRAJECTORY.FILENAME.PATTERN.
+TRAJECTORY.FILENAME.METADATA <- c(site = "character", year = "integer",
+                                  month = "integer", day = "integer",
+                                  hour = "integer", height = "double")
+
+# The name of the columns in the Hysplit files.
+TRAJECTORY.COLNAMES <-
+  c(V1 = "character", V2 = "character", year = "integer", month = "integer",
+    day = "integer", hour = "integer", min = "double", V8 = "character",
+    V9 = "character", lat = "double", lon = "double", height = "double",
+    pressure = "double")
+
+# Number of rows to skip when reading a trajectory file.
+TRAJECTORY.SKIP <- 7
 
 YEAR.TRIMESTERS <- c("t1", "t1", "t1", "t2", "t2", "t2",
                      "t3", "t3", "t3", "t4", "t4", "t4")

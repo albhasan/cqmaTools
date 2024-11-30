@@ -68,43 +68,41 @@ traj2lines <- function(traj_df, clon = "lon", clat = "lat"){
     return(lines_ls)
 }
 
-#' Get metadata from trajectory files
+#' Get metadata from trajectory file names
 #'
 #' @description
 #' Build a data frame with metadata extracted from the given filenames.
 #'
 #' @param files a character. Path to trajectory files.
-#' @param cnames a named character. The vector's names are the names for the 
-#'   resulting data frame and its values are their data types.
-#' @param m_period a vector with 12 elements identifying a period for each
-#'   month (e.g. trimester, semester, etc.).
-#' 
+#' @param cnames a character. Column names for the resulting data frame.
+#' @param ctypes a character. Column data types for the resulting data frame.
+#'
 #' @return a data frame.
 #'
 #' @export
 #'
-get_trajectory_metadata <- function(files, cnames = TRAJECTORY.COLNAMES,
-                                    m_period = YEAR.TRIMESTERS) {
+get_trajectory_metadata <- function(
+  files,
+  cnames = names(TRAJECTORY.FILENAME.METADATA),
+  ctypes = TRAJECTORY.FILENAME.METADATA
+) {
 
-    stopifnot("Invalid column type!" = cnames %in% 
-        c("character", "double", "integer"))
-    stopifnot("`month` column not found!" = "month" %in% names(cnames))
-    stopifnot("`m_period` length must be 12!" = length(m_period) == 12)
+  stopifnot("Inconsistent column names and types" =
+              length(cnames) == length(ctypes))
+  stopifnot("Invalid column type!" = ctypes %in%
+              c("character", "double", "integer"))
 
-    files_df <- data.frame(do.call(
-        what = rbind,
-        strsplit(basename(files), split = "_")
-    ))
-    files_df <- cast_df_cols(files_df, cnames = cnames)
+  files_df <- data.frame(do.call(
+    what = rbind,
+    strsplit(basename(files), split = "_")
+  ))
+  files_df <- cast_df_cols(files_df, ctypes = ctypes)
+  colnames(files_df) <- cnames
 
-    # Add the month periods.
-    if ("month" %in% colnames(files_df))
-        files_df["m_period"] <- m_period[files_df[["month"]]]
+  # Add path to files.
+  files_df["file_path"] <- files
 
-    # Add path to files.
-    files_df["filepath"] <- files
-
-    return(files_df)
+  return(files_df)
 
 }
 
@@ -141,15 +139,14 @@ format_traj_names <- function(traj_names,
 }
 
 
+
 #' Filter trajectories
 #'
 #' @description
-#' Filter the trajectories in the given list of data frames.
+#' Filter whole trajectories from the given list of data frames.
 #'
 #' @param traj Either a data frame or a list of them. Each data frame contains
 #'   data of a single trajectory.
-#' @param from_row,to_row a numeric(1). Use a subset of rows from each data
-#'   frame.
 #' @param clon,clat,cheight a character(1). Names of the longitude, latitude,
 #'   and height columns in the given data frame.
 #' @param traj_min_lon,traj_max_lon,traj_min_lat,traj_max_lat,traj_min_height,traj_max_height 
@@ -163,121 +160,254 @@ format_traj_names <- function(traj_names,
 #'
 #' @return Either a data frame or a list ot them.
 #'
-filter_traj <- function(traj, 
+filter_traj <- function(traj,
                         from_row = 1, to_row = Inf,
                         clon = "lon", clat = "lat", cheight = "height",
                         traj_min_lon    = -Inf, traj_max_lon    = Inf,
                         traj_min_lat    = -Inf, traj_max_lat    = Inf,
                         traj_min_height = -Inf, traj_max_height = Inf,
-                        vert_min_lon    = -Inf, vert_max_lon    = Inf,
-                        vert_min_lat    = -Inf, vert_max_lat    = Inf,
-                        vert_min_height = -Inf, vert_max_height = Inf,
                         min_per_vert_in_hrange = 0) {
 
-    if (is.data.frame(traj)) {
+  if (is.data.frame(traj)) {
 
-        # Filter number of rows in data frame.
-        if (!all(from_row == 1, to_row == Inf)) {
-            traj <- traj[from_row:to_row, ]
-        }
-
-        # Filter trajectories by their vertex percentage in height range.
-        if (min_per_vert_in_hrange > 0) {
-            # Compute percentage of vertices in the range from traj_min_height
-            # to traj_max_height.
-            per_vert_in_range <- sum(traj[[cheight]] >= traj_min_height &
-                                     traj[[cheight]] <= traj_max_height) / 
-                                 nrow(traj)
-            if(per_vert_in_range < min_per_vert_in_hrange)
-                return(traj[rep(FALSE, times = nrow(traj)),])
-        }
-
-        # Filter data frames (trajectories) by height.
-        if (!all(traj_min_height == -Inf, traj_max_height == Inf)) {
-            traj <- filter_data_frames(x = traj,
-                cname = cheight,
-                min = traj_min_height,
-                max = traj_max_height)
-            if (any(all(is.na(traj)), nrow(traj) == 0)) {
-                warning("No trajectory meets the height filter!")
-                return(traj)
-            }
-        }
-
-        # Filter data frames (trajectories) by longitude.
-        if (!all(traj_min_lon == -Inf, traj_max_lon == Inf)) {
-            traj <- filter_data_frames(x = traj,
-                cname = clon,
-                min = traj_min_lon,
-                max = traj_max_lon)
-            if (any(all(is.na(traj)), nrow(traj) == 0)) {
-                warning("No trajectory meets the longitude filter!")
-                return(traj)
-            }
-        }
-
-        # Filter data frames (trajectories) by latitude.
-        if (!all(traj_min_lat == -Inf, traj_max_lat == Inf)) {
-            traj <- filter_data_frames(x = traj,
-                cname = clat,
-                min = traj_min_lat,
-                max = traj_max_lat)
-            if (any(all(is.na(traj)), nrow(traj) == 0)) {
-                warning("No trajectory meets the latitude filter!")
-                return(traj)
-            }
-        }
-
-        # Filter trajectories' vertices by height.
-        if (!all(vert_min_height == -Inf, vert_max_height == Inf))
-            traj <- traj[traj[[cheight]] >= vert_min_height &
-                         traj[[cheight]] <= vert_max_height,]
-        if (nrow(traj) == 0) {
-            warning("No trajectory vertex meets the height filter!")
-            return(traj)
-        }
-
-        # Filter trajectories' vertices by longitude.
-        if (!all(vert_min_lon == -Inf, vert_max_lon == Inf))
-            traj <- traj[traj[[clon]] >= vert_min_lon &
-                         traj[[clon]] <= vert_max_lon,]
-        if (nrow(traj) == 0) {
-            warning("No trajectory vertex meets the longitude filter!")
-            return(traj)
-        }
-
-        # Filter trajectories' vertices by latitude.
-        if (!all(vert_min_lat == -Inf, vert_max_lat == Inf))
-            traj <- traj[traj[[clat]] > vert_min_lat &
-                         traj[[clat]] < vert_max_lat,]
-        if (nrow(traj) == 0) {
-            warning("No trajectory vertex meets the longitude filter!")
-            return(traj)
-        }
-
-        return(traj)
-
-    } else if (is.list(traj)) {
-        return(lapply(traj, filter_traj,
-            from_row = from_row, to_row = to_row,
-            min_per_vert_in_hrange = min_per_vert_in_hrange,
-            clon = clon, clat = clat, cheight = cheight,
-            traj_min_height = traj_min_height,
-            traj_max_height = traj_max_height,
-            traj_min_lon = traj_min_lon,
-            traj_max_lon = traj_max_lon,
-            traj_min_lat = traj_min_lat,
-            traj_max_lat = traj_max_lat,
-            vert_min_height = vert_min_height,
-            vert_max_height = vert_max_height,
-            vert_min_lon = vert_min_lon,
-            vert_max_lon = vert_max_lon,
-            vert_min_lat = vert_min_lat,
-            vert_max_lat = vert_max_lat
-        ))
-    } else {
-        stop("Unknown object type!")
+    # Filter trajectories by their vertex percentage in height range.
+    if (min_per_vert_in_hrange > 0) {
+      # Compute percentage of vertices in the range from traj_min_height
+      # to traj_max_height.
+      per_vert_in_range <-
+        sum(
+          traj[[cheight]] >= traj_min_height &
+            traj[[cheight]] <= traj_max_height
+        ) / nrow(traj)
+      if (per_vert_in_range < min_per_vert_in_hrange)
+        return(traj[rep(FALSE, times = nrow(traj)),])
     }
+    # Filter data frames (trajectories) by height.
+    if (!all(traj_min_height == -Inf, traj_max_height == Inf)) {
+      traj <- filter_data_frames(
+        x = traj,
+        cname = cheight,
+        min = traj_min_height,
+        max = traj_max_height
+      )
+      if (any(all(is.na(traj)), nrow(traj) == 0)) {
+        warning("No trajectory meets the height filter!")
+        return(traj)
+      }
+    }
+    # Filter data frames (trajectories) by longitude.
+    if (!all(traj_min_lon == -Inf, traj_max_lon == Inf)) {
+      traj <- filter_data_frames(
+        x = traj,
+        cname = clon,
+        min = traj_min_lon,
+        max = traj_max_lon
+      )
+      if (any(all(is.na(traj)), nrow(traj) == 0)) {
+        warning("No trajectory meets the longitude filter!")
+        return(traj)
+      }
+    }
+    # Filter data frames (trajectories) by latitude.
+    if (!all(traj_min_lat == -Inf, traj_max_lat == Inf)) {
+      traj <- filter_data_frames(
+        x = traj,
+        cname = clat,
+        min = traj_min_lat,
+        max = traj_max_lat
+      )
+      if (any(all(is.na(traj)), nrow(traj) == 0)) {
+        warning("No trajectory meets the latitude filter!")
+        return(traj)
+      }
+    }
+
+    return(traj)
+
+  } else if (is.list(traj)) {
+    return(lapply(traj, filter_traj,
+      from_row = from_row, to_row = to_row,
+      min_per_vert_in_hrange = min_per_vert_in_hrange,
+      clon = clon, clat = clat, cheight = cheight,
+      traj_min_height = traj_min_height,
+      traj_max_height = traj_max_height,
+      traj_min_lon = traj_min_lon,
+      traj_max_lon = traj_max_lon,
+      traj_min_lat = traj_min_lat,
+      traj_max_lat = traj_max_lat
+    ))
+  } else {
+    stop("Unknown object type!")
+  }
 
 }
 
+
+
+#' Filter trajectories' vertices
+#'
+#' @description
+#' Filter the trajectories' vertices in the given data frame or list of data
+#' frames.
+#'
+#' @param traj Either a data frame or a list of them. Each data frame contains
+#'   data of a single trajectory.
+#' @param from_row,to_row a numeric(1). Use a subset of rows from each data
+#'   frame.
+#' @param clon,clat,cheight a character(1). Names of the longitude, latitude,
+#'   and height columns in the given data frame.
+#' @param from_row,to_row a numeric(1). Use a subset of rows from each data
+#'   frame.
+#' @param traj_min_lon,traj_max_lon,traj_min_lat,traj_max_lat,traj_min_height,traj_max_height
+#'   a numeric(1). Remove trajectories which, at some vertex, fall outside of
+#'   these ranges.
+#' @param vert_min_lon,vert_max_lon,vert_min_lat,vert_max_lat,vert_min_height,vert_max_height
+#'   a numeric(1). Remove vertices from trajectories falling outside of these
+#'   ranges.
+#' @param min_per_vert_in_hrange a double(1). Minimum percentage of vertices
+#'   inside height range for a trajectory to be valid.
+#'
+#' @return Either a data frame or a list ot them.
+#'
+filter_traj_vertices <- function(
+  traj,
+  clon = "lon", clat = "lat", cheight = "height",
+  from_row = 1, to_row = Inf,
+  vert_min_lon    = -Inf, vert_max_lon    = Inf,
+  vert_min_lat    = -Inf, vert_max_lat    = Inf,
+  vert_min_height = -Inf, vert_max_height = Inf
+) {
+
+  if (is.data.frame(traj)) {
+    # Filter number of rows in data frame.
+    if (!all(from_row == 1, to_row == Inf)) {
+      traj <- traj[from_row:to_row, ]
+    }
+    # Filter trajectories' vertices by height.
+    if (!all(vert_min_height == -Inf, vert_max_height == Inf))
+      traj <- traj[traj[[cheight]] >= vert_min_height &
+                     traj[[cheight]] <= vert_max_height, ]
+    if (nrow(traj) == 0) {
+      warning("No trajectory vertex meets the height filter!")
+      return(traj)
+    }
+    # Filter trajectories' vertices by longitude.
+    if (!all(vert_min_lon == -Inf, vert_max_lon == Inf))
+      traj <- traj[traj[[clon]] >= vert_min_lon &
+                     traj[[clon]] <= vert_max_lon, ]
+    if (nrow(traj) == 0) {
+      warning("No trajectory vertex meets the longitude filter!")
+      return(traj)
+    }
+    # Filter trajectories' vertices by latitude.
+    if (!all(vert_min_lat == -Inf, vert_max_lat == Inf))
+      traj <- traj[traj[[clat]] > vert_min_lat &
+                     traj[[clat]] < vert_max_lat, ]
+    if (nrow(traj) == 0) {
+      warning("No trajectory vertex meets the longitude filter!")
+      return(traj)
+    }
+
+    return(traj)
+
+  } else if (is.list(traj)) {
+    return(lapply(traj, filter_traj_vertices,
+      clon = clon, clat = clat, cheight = cheight,
+      vert_min_height = vert_min_height,
+      vert_max_height = vert_max_height,
+      vert_min_lon = vert_min_lon,
+      vert_max_lon = vert_max_lon,
+      vert_min_lat = vert_min_lat,
+      vert_max_lat = vert_max_lat
+    ))
+  } else {
+    stop("Unknown object type!")
+  }
+
+}
+
+
+
+#' Read trajectory data from a file
+#'
+#' @description
+#' Read a file with data from a backtrajectory.
+#'
+#' @param file_path A character. Path to a data file.
+#' @param cnames A character. Column names.
+#' @param ctypes A character. Column types.
+#'
+#' @return a data frame.
+#'
+#' @export
+#'
+read_trajectory_file <- function(file_path,
+                                 cnames = names(TRAJECTORY.COLNAMES),
+                                 ctypes = TRAJECTORY.COLNAMES,
+                                 skip = TRAJECTORY.SKIP) {
+
+  data_df <- utils::read.table(
+    file = file_path,
+    sep = "",
+    header = FALSE,
+    skip = skip,
+    col.names = cnames,
+    colClasses = ctypes
+  )
+
+  if (all(data_df[["year"]] < 100))
+    data_df["year"] <- data_df[["year"]] + 2000
+
+  data_df["date"] <-
+    paste(
+      data_df[["year"]],
+      sprintf("%02d", data_df[["month"]]),
+      sprintf("%02d", data_df[["day"]]),
+      sep = "-"
+    )
+  data_df["date"] <-
+    paste0(
+      data_df[["date"]],
+      " ",
+      sprintf("%02d", data_df[["hour"]]),
+      ":",
+      sprintf("%02d", data_df[["min"]])
+    )
+  data_df["date"] <- as.POSIXct(data_df[["date"]])
+
+  data_df[["year"]] <- data_df[["month"]] <- data_df[["day"]] <- NULL
+  data_df[["hour"]] <- data_df[["min"]] <- NULL
+
+  return(data_df)
+}
+
+
+
+#' Get the trajectories' extent
+#'
+#' @description
+#' Get the extent of the given trajectories.
+#'
+#' @param .data a data frame of a list of data frame.
+#' @param ext_cnames a characcter. Column names representing varibles on which
+#' the extent is computed.
+#'
+#' @return a data frame or a list of data frames.
+#'
+#' @export
+#'
+get_traj_extent <-
+  function(
+    .data,
+    ext_cnames = c("lat", "lon", "height", "date")
+  ) {
+    if (is.data.frame(.data)) {
+      stopifnot("Expected columns not found!" =
+                  all(ext_cnames %in% colnames(.data)))
+      return(get_min_max(.data[ext_cnames]))
+    } else if (is.list(.data)) {
+      return(.data, get_traj_extent)
+    } else {
+      stop("Invalid object type!")
+    }
+  }

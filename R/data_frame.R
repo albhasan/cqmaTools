@@ -122,28 +122,62 @@ filter_data_frames <- function(x, cname, min, max) {
 #' Update a data frame's column names and change their types.
 #'
 #' @param .data a data frame.
-#' @param cnames a named character. The vector names will be the vector column
-#'   names and its values will be the new types.
+#' @param ctypes a character. Column types for the given data frame.
 #'
 #' @return a data frame.
 #'
-cast_df_cols <- function(.data, cnames) {
+cast_df_cols <- function(.data, ctypes) {
 
-    stopifnot("Invalid number of column names!" = 
-        ncol(.data) == length(cnames))
-    stopifnot("Expected a named vector!" = !is.null(names(cnames)))
-    stopifnot("Invalid type!" = all(cnames %in% c("character", "double",
-                                                  "integer")))
+  stopifnot("Invalid number of column names!" =
+              ncol(.data) == length(ctypes))
+  stopifnot("Invalid type!" = all(ctypes %in%
+                                    c("character", "double", "integer")))
 
-    colnames(.data) <- names(cnames)
-    for (cn in names(cnames)) {
-        if (cnames[cn] == "character") f <- as.character
-        if (cnames[cn] == "double")    f <- as.double
-        if (cnames[cn] == "integer")   f <- as.integer
-        .data[cn] <- f(.data[[cn]])
-    }
+  for (i in seq(ctypes)) {
+    ct <- ctypes[i]
+    if (ct == "character") f <- as.character
+    if (ct == "double")    f <- as.double
+    if (ct == "integer")   f <- as.integer
+    .data[i] <- f(.data[[i]])
+  }
 
-    return(.data)
+  return(.data)
 
 }
 
+
+
+#' Get minimum and maximum
+#'
+#' @description
+#' Get the mininum and maximum values of the numeric columns in the given data
+#' frame.
+#'
+#' @param .data a data frame.
+#' @param suffix_min,suffix_max a charter. Suffixes for the column names in
+#' resulting data frame.
+#'
+#' @return a data.frame.
+#'
+#' @export
+#'
+get_min_max <- function(.data, suffix_min = "min", suffix_max = "max") {
+
+  if (is.data.frame(.data)) {
+    # Convert a named vector into a data frame.
+    v2df <- function(x) {
+      as.data.frame(as.list(x))
+    }
+    # Get the minimum and the maximum on each numeric column.
+    data_df <- .data[vapply(.data, is.numeric, logical(1))]
+    min_df <- v2df(vapply(data_df, min, na.rm = TRUE, numeric(1)))
+    max_df <- v2df(vapply(data_df, max, na.rm = TRUE, numeric(1)))
+    colnames(min_df) <- paste(names(min_df), suffix_min, sep = "_")
+    colnames(max_df) <- paste(names(max_df), suffix_max, sep = "_")
+    return(cbind(min_df, max_df))
+  } else if (is.list(.data)) {
+    return(lapply(.data, get_min_max))
+  } else {
+    stop("Invalid object type!")
+  }
+}

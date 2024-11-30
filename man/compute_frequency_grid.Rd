@@ -11,7 +11,8 @@ compute_frequency_grid(
   clat = "lat",
   cheight = "height",
   grid_id = "grid_id",
-  crs = sf::st_crs(grid_sf)
+  crs = sf::st_crs(grid_sf),
+  densify_n = 1
 )
 }
 \arguments{
@@ -27,6 +28,9 @@ and height columns in \code{traj_df}.}
 identifies each cell in the grid.}
 
 \item{crs}{a numeric. EPSG code used for the trajectory data in \code{traj_df}.}
+
+\item{densify_n}{an integer. Increment the number of vertices in each of
+the segments in the given trajectory (see 'smoothr::densify').}
 }
 \value{
 an sf object. The given grid_sf object with additional attributes

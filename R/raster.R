@@ -40,3 +40,24 @@ smooth_neigh_na <- function(r, w = 3, threshold = 7) {
     return(r)
 }
 
+
+
+#' Get the rage of raster values
+#'
+#' @description
+#' Get the mininum and maximum value in the given rasters.
+#'
+#' @param r a 'terra' raster or a list of them.
+#'
+#' @return a numeric.
+#'
+#' @export
+#'
+get_raster_range <- function(r) {
+  if (is.list(r))
+    r <- terra::rast(r)
+  return(c(
+    min = min(r[], na.rm = TRUE),
+    max = max(r[], na.rm = TRUE)
+  ))
+}

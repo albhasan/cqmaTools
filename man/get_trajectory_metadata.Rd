@@ -2,22 +2,20 @@
 % Please edit documentation in R/trajectories.R
 \name{get_trajectory_metadata}
 \alias{get_trajectory_metadata}
-\title{Get metadata from trajectory files}
+\title{Get metadata from trajectory file names}
 \usage{
 get_trajectory_metadata(
   files,
-  cnames = TRAJECTORY.COLNAMES,
-  m_period = YEAR.TRIMESTERS
+  cnames = names(TRAJECTORY.FILENAME.METADATA),
+  ctypes = TRAJECTORY.FILENAME.METADATA
 )
 }
 \arguments{
 \item{files}{a character. Path to trajectory files.}
 
-\item{cnames}{a named character. The vector's names are the names for the
-resulting data frame and its values are their data types.}
+\item{cnames}{a character. Column names for the resulting data frame.}
 
-\item{m_period}{a vector with 12 elements identifying a period for each
-month (e.g. trimester, semester, etc.).}
+\item{ctypes}{a character. Column data types for the resulting data frame.}
 }
 \value{
 a data frame.
