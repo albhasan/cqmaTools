@@ -17,6 +17,9 @@ read_trajectory_file(
 \item{cnames}{A character. Column names.}
 
 \item{ctypes}{A character. Column types.}
+
+\item{skip}{An integer. Number of lines to skip when reading the
+trajectory file.}
 }
 \value{
 a data frame.

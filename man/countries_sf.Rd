@@ -5,23 +5,18 @@
 \alias{countries_sf}
 \title{Country polygons}
 \format{
-\subsection{\code{countries_sf}}{
-
 A sf object with 177 rows and 2 columns:
-\describe{
-\item{name}{Country name}
-\item{geometry}{Simple feature geometry list column (sfc)}
-}
-}
+name: Country name.
+geometry: Simple feature geometry list column sfc.
 }
 \source{
 \url{https://www.naturalearthdata.com}
 }
 \usage{
-countries_sf
+data(countries_sf)
 }
 \description{
 World country polygons obtained from Natural Earth. These polygons are used
-only as plot background.
+as plot background.
 }
 \keyword{datasets}

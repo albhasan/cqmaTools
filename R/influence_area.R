@@ -48,7 +48,7 @@ compute_frequency_grid <- function(traj_df,
   # Build a sf object (point) using the trajectories' vertices.
   points_sf <- sf::st_as_sf(
     x = traj_df,
-    coords = c(clon, clat), 
+    coords = c(clon, clat),
     crs = crs
   )
   # Increase the number of vertices in trajectories' segments.

@@ -7,22 +7,24 @@
 #' @param cname a character(1). The name for the new column.
 #'
 #' @return         A list of data frames.
-#' 
+#'
 listnames2dataframes <- function(df_ls, cname){
 
-    stopifnot("Expected a list of data frames!" = 
+  stopifnot("Expected a list of data frames!" =
               all(vapply(df_ls, is.data.frame, logical(1))))
-    stopifnot("Expected a named list!" = 
+  stopifnot("Expected a named list!" =
               length(names(df_ls)) == length(df_ls))
 
-    res <- lapply(seq(df_ls), function(x, df_ls){
-            df_ls[[x]][cname] <- names(df_ls)[x]
-            return(df_ls[[x]])
-        }, 
-        df_ls = df_ls
-    )
+  res <- lapply(
+    X = seq(df_ls),
+    FUN = function(x, df_ls) {
+      df_ls[[x]][cname] <- names(df_ls)[x]
+      return(df_ls[[x]])
+    },
+    df_ls = df_ls
+  )
 
-    return(res)
+  return(res)
 
 }
 
@@ -122,62 +124,27 @@ filter_data_frames <- function(x, cname, min, max) {
 #' Update a data frame's column names and change their types.
 #'
 #' @param .data a data frame.
-#' @param ctypes a character. Column types for the given data frame.
+#' @param cnames a character. The names of the columns.
+#' @param ctypes a character. The types of the columns.
 #'
 #' @return a data frame.
 #'
-cast_df_cols <- function(.data, ctypes) {
+cast_df_cols <- function(.data, cnames, ctypes) {
 
   stopifnot("Invalid number of column names!" =
-              ncol(.data) == length(ctypes))
-  stopifnot("Invalid type!" = all(ctypes %in%
-                                    c("character", "double", "integer")))
+              ncol(.data) == length(cnames))
+  stopifnot("Invalid names and types!" = length(cnames) == length(ctypes))
+  stopifnot("Invalid type!" = all(ctypes %in% c("character", "double",
+                                                "integer")))
 
-  for (i in seq(ctypes)) {
-    ct <- ctypes[i]
-    if (ct == "character") f <- as.character
-    if (ct == "double")    f <- as.double
-    if (ct == "integer")   f <- as.integer
+  colnames(.data) <- cnames
+  for (i in seq_along(ctypes)) {
+    if (ctypes[i] == "character") f <- as.character
+    if (ctypes[i] == "double")    f <- as.double
+    if (ctypes[i] == "integer")   f <- as.integer
     .data[i] <- f(.data[[i]])
   }
 
   return(.data)
 
-}
-
-
-
-#' Get minimum and maximum
-#'
-#' @description
-#' Get the mininum and maximum values of the numeric columns in the given data
-#' frame.
-#'
-#' @param .data a data frame.
-#' @param suffix_min,suffix_max a charter. Suffixes for the column names in
-#' resulting data frame.
-#'
-#' @return a data.frame.
-#'
-#' @export
-#'
-get_min_max <- function(.data, suffix_min = "min", suffix_max = "max") {
-
-  if (is.data.frame(.data)) {
-    # Convert a named vector into a data frame.
-    v2df <- function(x) {
-      as.data.frame(as.list(x))
-    }
-    # Get the minimum and the maximum on each numeric column.
-    data_df <- .data[vapply(.data, is.numeric, logical(1))]
-    min_df <- v2df(vapply(data_df, min, na.rm = TRUE, numeric(1)))
-    max_df <- v2df(vapply(data_df, max, na.rm = TRUE, numeric(1)))
-    colnames(min_df) <- paste(names(min_df), suffix_min, sep = "_")
-    colnames(max_df) <- paste(names(max_df), suffix_max, sep = "_")
-    return(cbind(min_df, max_df))
-  } else if (is.list(.data)) {
-    return(lapply(.data, get_min_max))
-  } else {
-    stop("Invalid object type!")
-  }
 }

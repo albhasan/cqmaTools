@@ -6,8 +6,6 @@
 \usage{
 filter_traj(
   traj,
-  from_row = 1,
-  to_row = Inf,
   clon = "lon",
   clat = "lat",
   cheight = "height",
@@ -32,9 +30,6 @@ these ranges.}
 
 \item{min_per_vert_in_hrange}{a double(1). Minimum percentage of vertices
 inside height range for a trajectory to be valid.}
-
-\item{vert_min_lon, vert_max_lon, vert_min_lat, vert_max_lat, vert_min_height, vert_max_height}{a numeric(1). Remove vertices from trajectories falling outside of these
-ranges.}
 }
 \value{
 Either a data frame or a list ot them.

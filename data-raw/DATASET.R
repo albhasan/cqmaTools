@@ -1,5 +1,3 @@
-## code to prepare `DATASET` dataset goes here
-
 # Preparea data for maps.
 
 library(maps)
@@ -11,4 +9,3 @@ states_sf    <- rnaturalearth::ne_states()
 states_sf    <- states_sf["name"]
 
 usethis::use_data(countries_sf, states_sf, overwrite = TRUE)
-

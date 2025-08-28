@@ -4,7 +4,7 @@
 \alias{traj2lines}
 \title{Build trajectory lines}
 \usage{
-traj2lines(traj_df, clon = "lon", clat = "lat")
+traj2lines(traj_df, clon, clat)
 }
 \arguments{
 \item{traj_df}{A data.frame with trajectory data in HYSPLIT format.}

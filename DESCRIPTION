@@ -1,6 +1,6 @@
 Package: cqmaTools
 Type: Package
-Title: Tools for managing the data flow at the INPE's CQMA
+Title: Tools for processing data at INPE's CQMA and LAGEE Laboratories
 Version: 0.4006
 Date: 2016-09-06
 Author: Alber Sanchez
@@ -9,15 +9,20 @@ Description: Tools for managing the data flow at the Center for Chemical and
     Environmental Technology (CQMA) of the Brazilian National Institute for 
     Space Research(INPE).
 Depends:
-    R (>= 4.0.0)
+    R (>= 4.1.0)
 Imports:
+    dplyr,
     ggplot2,
     lubridate,
-    roxygen2,
+    purrr,
     sf,
+    smoothr,
     stats,
     terra,
-    testthat
+    tibble,
+    tidyselect
+Suggests:
+    testthat (>= 3.1.3)
 License: MIT + file LICENSE
 RoxygenNote: 7.3.2
 roxygen2 requires Encoding: "UTF-8"

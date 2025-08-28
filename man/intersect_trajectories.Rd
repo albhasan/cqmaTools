@@ -4,13 +4,24 @@
 \alias{intersect_trajectories}
 \title{Intersect trajectories}
 \usage{
-intersect_trajectories(traj_ls, limit, crs = 4326, row_after = TRUE)
+intersect_trajectories(
+  traj_ls,
+  limit,
+  clon = "longitude",
+  clat = "latitude",
+  crs = 4326,
+  row_after = TRUE
+)
 }
 \arguments{
 \item{traj_ls}{a list of data frames. Eacha data frame represents a
 trajectory.}
 
 \item{limit}{an sf object (line). A limit.}
+
+\item{clon}{a character(1). The name of the longitude (x) column.}
+
+\item{clat}{a character(1). The name of the latitude (x) column.}
 
 \item{crs}{a numeric. The EPSG code of the trajectories.}
 

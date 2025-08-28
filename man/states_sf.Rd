@@ -5,22 +5,18 @@
 \alias{states_sf}
 \title{State polygons}
 \format{
-\subsection{\code{states_sf}}{
-
-A sf object with 4596 rows and 2 columns:
-\describe{
-\item{name}{State name}
-\item{geometry}{Simple feature geometry list column (sfc)}
-}
-}
+An sf object with 4596 rows and 2 columns:
+name: State name.
+geometry: Simple feature geometry list column sfc.
 }
 \source{
 \url{https://www.naturalearthdata.com}
 }
 \usage{
-states_sf
+data(states_sf)
 }
 \description{
-Administrative level 1 polygons obtained from Natural Earth. These polygons #' are used only as plot background.
+Administrative level 1 polygons obtained from Natural Earth. These polygons
+are used as plot background.
 }
 \keyword{datasets}

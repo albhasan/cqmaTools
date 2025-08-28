@@ -4,12 +4,14 @@
 \alias{cast_df_cols}
 \title{Cast data frame columns}
 \usage{
-cast_df_cols(.data, ctypes)
+cast_df_cols(.data, cnames, ctypes)
 }
 \arguments{
 \item{.data}{a data frame.}
 
-\item{ctypes}{a character. Column types for the given data frame.}
+\item{cnames}{a character. The names of the columns.}
+
+\item{ctypes}{a character. The types of the columns.}
 }
 \value{
 a data frame.
