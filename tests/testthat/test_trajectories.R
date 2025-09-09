@@ -156,7 +156,7 @@ test_that("intersect_trajectories works", {
     crs = 4326,
     row_after = TRUE
   )
-  expect_equal(res[1], expected = 0)
+  expect_equal(res[1], expected = NA_integer_)
   expect_true(res[2] > 0)
 
 })

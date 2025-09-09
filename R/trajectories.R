@@ -22,18 +22,30 @@ intersect_trajectories <- function(traj_ls, limit,
                                    crs = 4326, row_after = TRUE) {
 
   # Create a line for each pair of vertices in each trajectory.
-  traj_ls <- lapply(traj_ls, traj2lines, clon = clon, clat = clat)
+  traj_ls <- lapply(X = traj_ls, FUN = traj2lines, clon = clon, clat = clat)
 
   # Intersect the trajectories' lines with the limit.
-  traj_lim_in <- lapply(traj_ls, function(x, y) {
-    sapply(x, sf::st_intersects, y = y)
-  }, y = limit)
-  traj_lim_in <- lapply(traj_lim_in, function(x) {
-    sapply(x, function(y) length(y) > 0)
-  })
+  traj_lim_in <- lapply(
+    X = traj_ls,
+    FUN = function(x, y) {
+      sapply(X = x, FUN = sf::st_intersects, y = y)
+    }, y = limit
+  )
+  traj_lim_in <- lapply(
+    X = traj_lim_in,
+    FUN = function(x) {
+      sapply(X = x, FUN = function(y) length(y) > 0)
+    }
+  )
 
   # Find the first vertex of the line that intersects the limit.
-  row_id <- sapply(traj_lim_in, base::Position, f = isTRUE, nomatch = 0)
+  row_id <- vapply(
+    X = traj_lim_in,
+    FUN = base::Position,
+    FUN.VALUE = integer(1),
+    f = isTRUE,
+    nomatch = NA_integer_
+  )
 
   if (row_after)
     row_id <- ifelse(row_id > 0, row_id + 1, 0)
@@ -169,6 +181,8 @@ format_traj_names <- function(traj_names,
 #'
 #' @return Either a data frame or a list ot them.
 #'
+#' @export
+#'
 filter_traj <- function(traj,
                         clon = "lon", clat = "lat", cheight = "height",
                         traj_min_lon    = -Inf, traj_max_lon    = Inf,
@@ -274,6 +288,8 @@ filter_traj <- function(traj,
 #'   ranges.
 #'
 #' @return Either a data frame or a list of them.
+#'
+#' @export
 #'
 filter_traj_vertices <- function(
   traj,
@@ -410,23 +426,23 @@ read_trajectory_file <- function(file_path,
 #' @param cross_latitude A numeric(1). Latitude used for estimation.
 #' @param cross_date a date(1). Date used for estimation.
 #' @param stations_tb A tibble. Metereological stations' data.
+#' @param new_col A character(1). Name of the new column.
 #' @param clat A character(1). Name of the latitude column in stations_tb.
 #' @param cgas A character(1). Name of the column with the name of the gas in
 #' stations_tb.
 #' @param cname A character(1). Name of the column with the station name in
 #' stations_tb.
 #' @param cvalue A character(1). Name of the column with the values of the
-#' variable stores in the column cname.
-#' @param cprefix A character(1). Prefix used to name the new GHG columns.
+#' variable stored in the column cname.
 #'
 #' @return A named vector (double). One for each gas in the stations'
 #' measurements.
 #'
 #' @export
 #'
-estimate_ghg <- function(cross_latitude, cross_date, stations_tb,
+estimate_ghg <- function(cross_latitude, cross_date, stations_tb, new_col,
                          clat = "lat", cgas = "gas", cname = "name",
-                         cvalue = "value", cprefix = "ghg_") {
+                         cvalue = "value") {
 
   # Avoid check & linting's warnings.
   .data <- delta_lat <- delta_time <- NULL
@@ -469,7 +485,7 @@ estimate_ghg <- function(cross_latitude, cross_date, stations_tb,
           list(lat = cross_latitude)
         )
         # TODO: Check if this column name is valid and new.
-        names(res) <- paste0(cprefix, gas)
+        names(res) <- new_col
         return(res)
       }
     )

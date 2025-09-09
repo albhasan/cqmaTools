@@ -6,8 +6,8 @@
 \usage{
 get_trajectory_metadata(
   files,
-  cnames = names(TRAJECTORY.FILENAME.METADATA),
-  ctypes = TRAJECTORY.FILENAME.METADATA
+  cnames = names(TRAJECTORY.COLNAMES),
+  ctypes = TRAJECTORY.COLNAMES
 )
 }
 \arguments{

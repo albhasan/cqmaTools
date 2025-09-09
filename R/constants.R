@@ -17,7 +17,8 @@ BRIEFCASE.COLNAMES <- c("site", "year", "month", "day", "hour", "min", "flask",
 #'
 #' @export
 #'
-TRAJECTORY.FILENAME.PATTERN = "^[a-zA-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+[.][0-9]+$"
+TRAJECTORY.FILENAME.PATTERN <-
+  "^[a-zA-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[0-9]+[.][0-9]+$"
 
 #' Names of the columns in the files with trajectory data.
 #'
@@ -27,7 +28,8 @@ TRAJECTORY.FILENAME.PATTERN = "^[a-zA-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_
 #'
 #' @details the column names and their meaning.
 #' * parameter traj_number Trajectory number.
-#' * parameter grid_number Metereological grid number or antecedent trajectory number.
+#' * parameter grid_number Metereological grid number or antecedent trajectory
+#' number.
 #' * parameter year Year of the point.
 #' * parameter month Month of the point.
 #' * parameter day Day of the point.
@@ -38,7 +40,8 @@ TRAJECTORY.FILENAME.PATTERN = "^[a-zA-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]{2}_
 #' * parameter latitude Position latitude.
 #' * parameter longitude Position longitude.
 #' * parameter height Position height in meters above ground.
-#' * parameter pressure n diagnostic output variables; 1st to be output is always pressure.
+#' * parameter pressure n diagnostic output variables; 1st to be output is
+#' always pressure.
 #' @md
 #'
 #' @export
@@ -86,9 +89,11 @@ YEAR.TRIMESTERS <- c("t1", "t1", "t1", "t2", "t2", "t2",
                      "t3", "t3", "t3", "t4", "t4", "t4")
 
 #' Months grouped into semesters.
+#' @export
 YEAR.SEMESTERS <- c("s1", "s1", "s1", "s1", "s1", "s1",
                     "s2", "s2", "s2", "s2", "s2", "s2")
 
 #' Months grouped into a year.
+#' @export
 YEAR.YEAR      <- c("year", "year", "year", "year", "year", "year",
                     "year", "year", "year", "year", "year", "year")

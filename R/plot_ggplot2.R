@@ -14,6 +14,8 @@
 #' @return
 #' A ggplot object.
 #'
+#' @export
+#'
 get_map_plot <- function(data_tb, cid, clon, clat,
                          range_lon = NA, range_lat = NA) {
 
@@ -57,7 +59,7 @@ get_map_plot <- function(data_tb, cid, clon, clat,
 #'
 #' @param data_tb A tibble with backtrajectory data.
 #' @param cprofileid A character(1). Name of the column that identifies each
-#' backtrajecotry.
+#' backtrajectory.
 #' @param cghg A character(1). Name of the column with GHG concentrations.
 #' @param cheight A character(1). Name of the column with sample heights.
 #' @param add_mean_line A logical(1). Should be added a line representing the
@@ -73,6 +75,8 @@ get_map_plot <- function(data_tb, cid, clon, clat,
 #' @return
 #' A `ggplot2` object.
 #'
+#' @export
+#'
 get_profile_plot <- function(data_tb, cprofileid, cghg, cheight,
                              add_mean_line = TRUE, mean_line_color = "black",
                              mean_line_width = 2, add_sd_shadow = TRUE,
@@ -80,6 +84,13 @@ get_profile_plot <- function(data_tb, cprofileid, cghg, cheight,
                              title = NA) {
 
   .data <- .ghg_mean <- .ghg_sd <- NULL
+
+  stopifnot("Field not found!" = all(c(cprofileid, cghg, cheight) %in%
+                                       colnames(data_tb)))
+
+  data_tb <-
+    data_tb |>
+    dplyr::arrange(.data[[cprofileid]], .data[[cheight]])
 
   profile_plot <-
     ggplot2::ggplot(
@@ -101,7 +112,8 @@ get_profile_plot <- function(data_tb, cprofileid, cghg, cheight,
       dplyr::mutate(
         .ribbon_min = .ghg_mean - .ghg_sd,
         .ribbon_max = .ghg_mean + .ghg_sd
-      )
+      ) |>
+      dplyr::arrange(.data[[cheight]])
   }
 
   if (add_sd_shadow) {
@@ -150,7 +162,7 @@ get_profile_plot <- function(data_tb, cprofileid, cghg, cheight,
     ggplot2::ylab(ylab) +
     ggplot2::theme(legend.title = ggplot2::element_blank())
 
-  if(!is.na(title)) {
+  if (!is.na(title)) {
     profile_plot <-
       profile_plot +
       ggplot2::ggtitle(title)

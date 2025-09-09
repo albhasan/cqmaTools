@@ -19,7 +19,8 @@ in the simulation.
 the column names and their meaning.
 \itemize{
 \item parameter traj_number Trajectory number.
-\item parameter grid_number Metereological grid number or antecedent trajectory number.
+\item parameter grid_number Metereological grid number or antecedent trajectory
+number.
 \item parameter year Year of the point.
 \item parameter month Month of the point.
 \item parameter day Day of the point.
@@ -30,7 +31,8 @@ the column names and their meaning.
 \item parameter latitude Position latitude.
 \item parameter longitude Position longitude.
 \item parameter height Position height in meters above ground.
-\item parameter pressure n diagnostic output variables; 1st to be output is always pressure.
+\item parameter pressure n diagnostic output variables; 1st to be output is
+always pressure.
 }
 }
 \keyword{datasets}

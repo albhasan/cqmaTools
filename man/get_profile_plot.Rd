@@ -22,7 +22,7 @@ get_profile_plot(
 \item{data_tb}{A tibble with backtrajectory data.}
 
 \item{cprofileid}{A character(1). Name of the column that identifies each
-backtrajecotry.}
+backtrajectory.}
 
 \item{cghg}{A character(1). Name of the column with GHG concentrations.}
 

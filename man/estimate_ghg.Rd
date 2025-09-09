@@ -8,11 +8,11 @@ estimate_ghg(
   cross_latitude,
   cross_date,
   stations_tb,
+  new_col,
   clat = "lat",
   cgas = "gas",
   cname = "name",
-  cvalue = "value",
-  cprefix = "ghg_"
+  cvalue = "value"
 )
 }
 \arguments{
@@ -21,6 +21,8 @@ estimate_ghg(
 \item{cross_date}{a date(1). Date used for estimation.}
 
 \item{stations_tb}{A tibble. Metereological stations' data.}
+
+\item{new_col}{A character(1). Name of the new column.}
 
 \item{clat}{A character(1). Name of the latitude column in stations_tb.}
 
@@ -31,9 +33,7 @@ stations_tb.}
 stations_tb.}
 
 \item{cvalue}{A character(1). Name of the column with the values of the
-variable stores in the column cname.}
-
-\item{cprefix}{A character(1). Prefix used to name the new GHG columns.}
+variable stored in the column cname.}
 }
 \value{
 A named vector (double). One for each gas in the stations'
