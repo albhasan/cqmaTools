@@ -136,6 +136,63 @@ rlog::log_info("Loading utilitary functions...")
 
 
 
+#' Utilitary function for saving plots.
+save_plot <- function(data_tb) {
+  out_file <- the_plot <- NULL
+  data_tb %>%
+    dplyr::mutate(
+      out_file = purrr::map2_chr(
+        .x = out_file,
+        .y = the_plot,
+        .f = function(.x, .y) {
+          .y %>%
+            ggplot2::ggsave(
+              filename = .x,
+              width = plot_height,
+              height = plot_width,
+              units = plot_units
+            )
+        }
+      )
+    ) %>%
+    return()
+}
+
+# Utilitary function for counting the number of trajectories in the data.
+count_trajs <- function(data_tb) {
+  map_data <- NULL
+  data_tb %>%
+    dplyr::mutate(
+      n_traj = purrr::map_int(
+        .x = map_data,
+        .f = function(.x) {
+          return(length(unique(.x[["trajectory_id"]])))
+        }
+      )
+    ) %>%
+    return()
+}
+
+# Utilitary function for removing the legend when there are too many items.
+remove_legend <- function(data_tb, leg_max_items) {
+  n_traj <- the_plot <- NULL
+  data_tb %>%
+    dplyr::mutate(
+      the_plot = purrr::map2(
+        .x = the_plot,
+        .y = n_traj,
+        .f = function(the_plot, n_traj) {
+          if (n_traj > map_max_traj_leg)
+            the_plot <- the_plot + ggplot2::theme(legend.position = "none")
+          return(the_plot)
+        }
+      )
+    ) %>%
+    return()
+}
+
+
+
 rlog::log_info("Reading metereological station data...")
 
 
@@ -342,7 +399,7 @@ backtrajectories_tb <-
 
 
 
-rlog::log_info("Interpolating GHG concentration for backtrajs...")
+rlog::log_info("Interpolating GHG concentration for backtrajectories...")
 
 
 
@@ -435,11 +492,16 @@ backtrajectories_tb <-
 
 
 
-rlog::log_info("Exporting trajectory report...")
+rlog::log_info("Exporting backtrajectory report...")
 
 
 
-report_tb <-
+bk_report_fn <- file.path(
+  out_dir,
+  paste0("report_backtrajectories_", station_gasses, ".csv")
+)
+
+bk_report_tb <-
   backtrajectories_tb %>%
   dplyr::select(
     profile_id, trajectory_id, site, sample_date, end_height,
@@ -448,7 +510,9 @@ report_tb <-
     time_to_stations, t2s_updown, t2s_model, t2s_bfat_1, t2s_bfat_2,
     backtrajectory_span = bt_span
   ) %>%
-  readr::write_csv(file = file.path(out_dir, "report_trajectories.csv"))
+  readr::write_csv(file = bk_report_fn)
+
+rlog::log_info(paste0("Report saved to:\n", bk_report_fn))
 
 
 
@@ -456,8 +520,13 @@ rlog::log_info("Exporting profile report...")
 
 
 
-report_tb <-
-  report_tb %>%
+pr_report_fn <- file.path(
+  out_dir,
+  paste0("report_profiles_", station_gasses, ".csv")
+)
+
+pr_report_tb <-
+  bk_report_tb %>%
   tidyr::nest(.by = tidyselect::all_of("profile_id"), .key = "data_tb") %>%
   dplyr::mutate(
     n_traj = purrr::map_int(
@@ -498,7 +567,28 @@ report_tb <-
     )
   ) %>%
   dplyr::select(-data_tb) %>%
-  readr::write_csv(file = file.path(out_dir, "report_profiles.csv"))
+  readr::write_csv(file = pr_report_fn)
+
+rlog::log_info(paste0("Report saved to:\n", pr_report_fn))
+
+
+
+rlog::log_info("Exporting flux report...")
+
+
+
+flux_report_tb <-
+  backtrajectories_tb %>%
+  dplyr::mutate(
+    file.vec = basename(file_path),
+    height = end_height,
+    year = lubridate::year(sample_date),
+    month = lubridate::month(sample_date),
+    day = lubridate::day(sample_date),
+    hour = lubridate::hour(sample_date),
+    minute = lubridate::minute(sample_date)
+  ) %>%
+  dplyr::select(file.vec, height, site, year, month, day, hour, minute)
 
 
 
@@ -511,7 +601,7 @@ plot_tb <-
   backtrajectories_tb %>%
   tidyr::nest(.by = site, .key = "profile_data") %>%
   dplyr::mutate(
-    profile_plot = purrr::map(
+    the_plot = purrr::map(
       .x = profile_data,
       .f = get_profile_plot,
       cprofileid = "profile_id",
@@ -520,32 +610,28 @@ plot_tb <-
     ),
     out_file = file.path(
       out_dir,
-      stringr::str_c("profile_", site, ".png", sep = "")
+      stringr::str_c("profile_", site, "_", station_gasses, ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = profile_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  save_plot()
+
+rlog::log_info(
+  paste0(
+        "Plots by site saved to:\n",
+        paste(plot_tb[["out_file"]], collapse = "\n")
   )
+)
 
 # Plot by site-year.
 plot_tb <-
   backtrajectories_tb %>%
   dplyr::mutate(y = as.integer(lubridate::year(sample_date))) %>%
-  tidyr::nest(.by = tidyselect::all_of(c("site", "y")), .key = "profile_data") %>%
+  tidyr::nest(
+    .by = tidyselect::all_of(c("site", "y")),
+    .key = "profile_data"
+  ) %>%
   dplyr::mutate(
-    profile_plot = purrr::map(
+    the_plot = purrr::map(
       .x = profile_data,
       .f = get_profile_plot,
       cprofileid = "profile_id",
@@ -554,24 +640,18 @@ plot_tb <-
     ),
     out_file = file.path(
       out_dir,
-      stringr::str_c("profile_", site, "_", y, ".png", sep = "")
+      stringr::str_c("profile_", site, "_", y, "_", station_gasses,
+                     ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = profile_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Plots by site-year saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
+)
 
 # Plot by site-semester.
 plot_tb <-
@@ -582,7 +662,7 @@ plot_tb <-
   tidyr::nest(.by = tidyselect::all_of(c("site", "s")),
               .key = "profile_data") %>%
   dplyr::mutate(
-    profile_plot = purrr::map(
+    the_plot = purrr::map(
       .x = profile_data,
       .f = get_profile_plot,
       cprofileid = "profile_id",
@@ -591,24 +671,18 @@ plot_tb <-
     ),
     out_file = file.path(
       out_dir,
-      stringr::str_c("profile_", site, "_", s, ".png", sep = "")
+      stringr::str_c("profile_", site, "_", s, "_", station_gasses,
+                     ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = profile_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Profile plots by site-semester saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
+)
 
 # Plot by site-trimester.
 plot_tb <-
@@ -619,7 +693,7 @@ plot_tb <-
   tidyr::nest(.by = tidyselect::all_of(c("site", "t")),
               .key = "profile_data") %>%
   dplyr::mutate(
-    profile_plot = purrr::map(
+    the_plot = purrr::map(
       .x = profile_data,
       .f = get_profile_plot,
       cprofileid = "profile_id",
@@ -628,24 +702,18 @@ plot_tb <-
     ),
     out_file = file.path(
       out_dir,
-      stringr::str_c("profile_", site, "_", t, ".png", sep = "")
+      stringr::str_c("profile_", site, "_", t, "_", station_gasses,
+                     ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = profile_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Profile plots by site-trimester saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
+)
 
 # Plot by site-year-semester.
 plot_tb <-
@@ -657,7 +725,7 @@ plot_tb <-
   tidyr::nest(.by = tidyselect::all_of(c("site", "y", "s")),
               .key = "profile_data") %>%
   dplyr::mutate(
-    profile_plot = purrr::map(
+    the_plot = purrr::map(
       .x = profile_data,
       .f = get_profile_plot,
       cprofileid = "profile_id",
@@ -666,24 +734,18 @@ plot_tb <-
     ),
     out_file = file.path(
       out_dir,
-      stringr::str_c("profile_", site, "_", y, "_", s, ".png", sep = "")
+      stringr::str_c("profile_", site, "_", y, "_", s, "_", station_gasses,
+                     ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = profile_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Profile plots by site-trimester saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
+)
 
 # Plot by site-year-trimester.
 plot_tb <-
@@ -695,7 +757,7 @@ plot_tb <-
   tidyr::nest(.by = tidyselect::all_of(c("site", "y", "t")),
               .key = "profile_data") %>%
   dplyr::mutate(
-    profile_plot = purrr::map(
+    the_plot = purrr::map(
       .x = profile_data,
       .f = get_profile_plot,
       cprofileid = "profile_id",
@@ -704,24 +766,18 @@ plot_tb <-
     ),
     out_file = file.path(
       out_dir,
-      stringr::str_c("profile_", site, "_", y, "_", t, ".png", sep = "")
+      stringr::str_c("profile_", site, "_", y, "_", t, "_", station_gasses,
+                     ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = profile_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Profile plots by site-trimester saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
+)
 
 
 
@@ -736,7 +792,7 @@ plot_tb <-
   tidyr::unnest(data_df) %>%
   tidyr::nest(.by = site, .key = "map_data") %>%
   dplyr::mutate(
-    map_plot = purrr::map(
+    the_plot = purrr::map(
       .x = map_data,
       .f = get_map_plot,
       cid = "trajectory_id",
@@ -750,40 +806,16 @@ plot_tb <-
       stringr::str_c("map_", site, ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    n_traj = purrr::map_int(
-      .x = map_data,
-      .f = function(.x) {
-        return(length(unique(.x[["trajectory_id"]])))
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    map_plot = purrr::map2(
-      .x = map_plot,
-      .y = n_traj,
-      .f = function(map_plot, n_traj) {
-        if (n_traj > map_max_traj_leg)
-          map_plot <- map_plot + ggplot2::theme(legend.position = "none")
-        return(map_plot)
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = map_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  count_trajs() %>%
+  remove_legend(leg_max_items = map_max_traj_leg) %>%
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Trajectory maps by site saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
+)
 
 # Plot trajectories by site-year.
 plot_tb <-
@@ -791,10 +823,12 @@ plot_tb <-
   dplyr::select(profile_id, trajectory_id, site, sample_date, data_df) %>%
   dplyr::mutate(y = lubridate::year(sample_date)) %>%
   tidyr::unnest(data_df) %>%
-  tidyr::nest(.by = tidyselect::all_of(c("site", "y")),
-              .key = "map_data") %>%
+  tidyr::nest(
+    .by = tidyselect::all_of(c("site", "y")),
+    .key = "map_data"
+  ) %>%
   dplyr::mutate(
-    map_plot = purrr::map(
+    the_plot = purrr::map(
       .x = map_data,
       .f = get_map_plot,
       cid = "trajectory_id",
@@ -808,40 +842,16 @@ plot_tb <-
       stringr::str_c("map_", site, "_", y, ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    n_traj = purrr::map_int(
-      .x = map_data,
-      .f = function(.x) {
-        return(length(unique(.x[["trajectory_id"]])))
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    map_plot = purrr::map2(
-      .x = map_plot,
-      .y = n_traj,
-      .f = function(map_plot, n_traj) {
-        if (n_traj > map_max_traj_leg)
-          map_plot <- map_plot + ggplot2::theme(legend.position = "none")
-        return(map_plot)
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = map_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  count_trajs() %>%
+  remove_legend(leg_max_items = map_max_traj_leg) %>%
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Trajectory maps by site-year saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
+)
 
 # Plot trajectories by site-semester.
 plot_tb <-
@@ -849,10 +859,12 @@ plot_tb <-
   dplyr::select(profile_id, trajectory_id, site, sample_date, data_df) %>%
   dplyr::mutate(s = YEAR.SEMESTERS[lubridate::month(sample_date)]) %>%
   tidyr::unnest(data_df) %>%
-  tidyr::nest(.by = tidyselect::all_of(c("site", "s")),
-              .key = "map_data") %>%
+  tidyr::nest(
+   .by = tidyselect::all_of(c("site", "s")),
+   .key = "map_data"
+  ) %>%
   dplyr::mutate(
-    map_plot = purrr::map(
+    the_plot = purrr::map(
       .x = map_data,
       .f = get_map_plot,
       cid = "trajectory_id",
@@ -866,40 +878,16 @@ plot_tb <-
       stringr::str_c("map_", site, "_", s, ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    n_traj = purrr::map_int(
-      .x = map_data,
-      .f = function(.x) {
-        return(length(unique(.x[["trajectory_id"]])))
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    map_plot = purrr::map2(
-      .x = map_plot,
-      .y = n_traj,
-      .f = function(map_plot, n_traj) {
-        if (n_traj > map_max_traj_leg)
-          map_plot <- map_plot + ggplot2::theme(legend.position = "none")
-        return(map_plot)
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = map_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  count_trajs() %>%
+  remove_legend(leg_max_items = map_max_traj_leg) %>%
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Trajectory maps by site-semester saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
+)
 
 # Plot trajectories by site-trimester.
 plot_tb <-
@@ -907,10 +895,12 @@ plot_tb <-
   dplyr::select(profile_id, trajectory_id, site, sample_date, data_df) %>%
   dplyr::mutate(t = YEAR.TRIMESTERS[lubridate::month(sample_date)]) %>%
   tidyr::unnest(data_df) %>%
-  tidyr::nest(.by = tidyselect::all_of(c("site", "t")),
-              .key = "map_data") %>%
+  tidyr::nest(
+    .by = tidyselect::all_of(c("site", "t")),
+    .key = "map_data"
+  ) %>%
   dplyr::mutate(
-    map_plot = purrr::map(
+    the_plot = purrr::map(
       .x = map_data,
       .f = get_map_plot,
       cid = "trajectory_id",
@@ -924,42 +914,16 @@ plot_tb <-
       stringr::str_c("map_", site, "_", t, ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    n_traj = purrr::map_int(
-      .x = map_data,
-      .f = function(.x) {
-        return(length(unique(.x[["trajectory_id"]])))
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    map_plot = purrr::map2(
-      .x = map_plot,
-      .y = n_traj,
-      .f = function(map_plot, n_traj) {
-        if (n_traj > map_max_traj_leg)
-          map_plot <- map_plot + ggplot2::theme(legend.position = "none")
-        return(map_plot)
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = map_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  count_trajs() %>%
+  remove_legend(leg_max_items = map_max_traj_leg) %>%
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Trajectory maps by site-trimester saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
-
-
+)
 
 # Plot trajectories by site-year-semester.
 plot_tb <-
@@ -970,10 +934,12 @@ plot_tb <-
     s = YEAR.SEMESTERS[lubridate::month(sample_date)]
   ) %>%
   tidyr::unnest(data_df) %>%
-  tidyr::nest(.by = tidyselect::all_of(c("site", "y", "s")),
-              .key = "map_data") %>%
+  tidyr::nest(
+    .by = tidyselect::all_of(c("site", "y", "s")),
+    .key = "map_data"
+  ) %>%
   dplyr::mutate(
-    map_plot = purrr::map(
+    the_plot = purrr::map(
       .x = map_data,
       .f = get_map_plot,
       cid = "trajectory_id",
@@ -987,42 +953,16 @@ plot_tb <-
       stringr::str_c("map_", site, "_", y, "_", s, ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    n_traj = purrr::map_int(
-      .x = map_data,
-      .f = function(.x) {
-        return(length(unique(.x[["trajectory_id"]])))
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    map_plot = purrr::map2(
-      .x = map_plot,
-      .y = n_traj,
-      .f = function(map_plot, n_traj) {
-        if (n_traj > map_max_traj_leg)
-          map_plot <- map_plot + ggplot2::theme(legend.position = "none")
-        return(map_plot)
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = map_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  count_trajs() %>%
+  remove_legend(leg_max_items = map_max_traj_leg) %>%
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Trajectory maps by site-year-semester saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
-
-
+)
 
 # Plot trajectories by site-year-trimester.
 plot_tb <-
@@ -1033,10 +973,12 @@ plot_tb <-
     t = YEAR.TRIMESTERS[lubridate::month(sample_date)]
   ) %>%
   tidyr::unnest(data_df) %>%
-  tidyr::nest(.by = tidyselect::all_of(c("site", "y", "t")),
-              .key = "map_data") %>%
+  tidyr::nest(
+    .by = tidyselect::all_of(c("site", "y", "t")),
+    .key = "map_data"
+  ) %>%
   dplyr::mutate(
-    map_plot = purrr::map(
+    the_plot = purrr::map(
       .x = map_data,
       .f = get_map_plot,
       cid = "trajectory_id",
@@ -1050,123 +992,15 @@ plot_tb <-
       stringr::str_c("map_", site, "_", y, "_", t, ".png", sep = "")
     )
   ) %>%
-  dplyr::mutate(
-    n_traj = purrr::map_int(
-      .x = map_data,
-      .f = function(.x) {
-        return(length(unique(.x[["trajectory_id"]])))
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    map_plot = purrr::map2(
-      .x = map_plot,
-      .y = n_traj,
-      .f = function(map_plot, n_traj) {
-        if (n_traj > map_max_traj_leg)
-          map_plot <- map_plot + ggplot2::theme(legend.position = "none")
-        return(map_plot)
-      }
-    )
-  ) %>%
-  dplyr::mutate(
-    out_file = purrr::map2(
-      .x = out_file,
-      .y = map_plot,
-      .f = function(.x, .y) {
-        .y %>%
-          ggplot2::ggsave(
-            filename = .x,
-            width = plot_height,
-            height = plot_width,
-            units = plot_units
-          )
-      }
-    )
+  count_trajs() %>%
+  remove_legend(leg_max_items = map_max_traj_leg) %>%
+  save_plot()
+
+rlog::log_info(
+  paste0(
+    "Trajectory maps by site-year-trimester saved to:\n",
+    paste(plot_tb[["out_file"]], collapse = "\n")
   )
-
-
+)
 
 rlog::log_info("Finished!")
-
-
-
-
-
-
-###############################################################################
-# NOTE: Do I need the briefcases' data in this script?
-###############################################################################
-
-# briefcase_dir         <- "/home/alber/Documents/data/r_packages/cqmaTools/briefcases"
-# stopifnot("Briefcase directory not found" = dir.exists(briefcase_dir))
-#
-# # Flags to keep in flagcolname.
-# keep_flags <- c("...", "..>", "..<")
-#
-#
-# # Column for filtering briefcase data.
-# flag_colname <- "flag"
-#
-#
-# stopifnot(c("name", station_clon, station_clat) %in%
-#           colnames(stations_lonlat_tb))
-#
-# # 2 - Read data from the briefcases.
-# briefcase_tb <-
-#   briefcase_dir %>%
-#   list.files(
-#     full.names = TRUE,
-#     recursive = FALSE,
-#     include.dirs = FALSE
-#   ) %>%
-#   dplyr::as_tibble() %>%
-#   dplyr::rename(file_path = "value") %>%
-#   dplyr::mutate(file_name = basename(file_path)) %>%
-#   tidyr::separate(
-#     col = file_name,
-#     into = c("site", "gas"),
-#     sep = "[.]"
-#   ) %>%
-#   dplyr::mutate(
-#     data_df = purrr::map(
-#       file_path,
-#       .f = utils::read.table,
-#       sep = "",
-#       header = FALSE,
-#       skip = 0,
-#       col.names = BRIEFCASE.COLNAMES
-#     )
-#   ) %>%
-#   # Keep rows with valid flags.
-#   dplyr::mutate(
-#     data_df = purrr::map(
-#       .x = data_df,
-#       .f = function(x, flag_colname, keep_flags) {
-#         return(x[x[[flag_colname]] %in% keep_flags, ])
-#       },
-#       flag_colname = flag_colname,
-#       keep_flags = keep_flags
-#     )
-#   ) %>%
-#   # Remove duplicated rows.
-#   dplyr::mutate(
-#     data_df = purrr::map(
-#       .x = data_df,
-#       .f = dplyr::distinct
-#     )
-#   ) %>%
-#   # Remove longitude & latitude outliers.
-#   dplyr::mutate(
-#     data_df = purrr::map(
-#       .x = data_df,
-#       .f = function(x, lon_colname, lat_colname) {
-#         stopifnot("Longitude or latitude columns not found!" =
-#                     all(c(lon_colname, lat_colname) %in% colnames(x)))
-#         return(x[!(is_outlier(x[[lon_colname]]) |
-#                      is_outlier(x[[lat_colname]])), ])
-#       },
-#       lon_colname = station_clon,
-#       lat_colname = station_clat
-#     )
-#   )

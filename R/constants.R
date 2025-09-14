@@ -1,14 +1,18 @@
-#' The name of the columns in the trajectory files produced by the Hysplit software.
-#' @export
-HYSPLIT.COLNAMES <- c("V1", "V2", "year", "month", "day", "hour", "min",
-                      "V8", "V9", "lat", "lon", "height", "pressure")
-
 #' The name of the columns in the file resulting from analyzing gas samples.
 #' @export
 BRIEFCASE.COLNAMES <- c("site", "year", "month", "day", "hour", "min", "flask",
                         "V8", "concentration", "flag", "V11", "ayear",
                         "amonth", "aday", "ahour", "amin", "lat", "lon",
                         "height", "eventnumber", "flat", "flon", "fheight")
+
+#' Flags for identifying valid observations in briefcase data. 
+#' @export
+BRIEFCASE.VALID.FLAGS <- c("...", "..>", "..<")
+
+#' The name of the columns in the trajectory files produced by the Hysplit software.
+#' @export
+HYSPLIT.COLNAMES <- c("V1", "V2", "year", "month", "day", "hour", "min",
+                      "V8", "V9", "lat", "lon", "height", "pressure")
 
 #' Pattern of trajectories' filenames.
 #'
