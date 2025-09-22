@@ -31,7 +31,7 @@ suppressPackageStartupMessages(library(rlog))
 suppressPackageStartupMessages(library(tidyr))
 suppressPackageStartupMessages(library(tools))
 
-library(cqmaTools)
+#library(cqmaTools)
 
 
 
@@ -204,6 +204,10 @@ stations_tb <-
     recursive = FALSE,
     include.dirs = FALSE
   ) %>%
+  (function(x) {
+    stopifnot("No station files found!" = length(x) > 0)
+    return(x)
+  }) %>%
   dplyr::as_tibble() %>%
   dplyr::rename(file_path = "value") %>%
   dplyr::mutate(
@@ -246,6 +250,10 @@ backtrajectories_tb <-
     include.dirs = FALSE,
     pattern = TRAJECTORY.FILENAME.PATTERN
   ) %>%
+  (function(x) {
+    stopifnot("No backtrajectory files found!" = length(x) > 0)
+    return(x)
+  }) %>%
   dplyr::as_tibble() %>%
   dplyr::rename(file_path = "value") %>%
   dplyr::mutate(file_name = basename(file_path)) %>%
@@ -298,6 +306,7 @@ backtrajectories_tb <-
     )
   ) %>%
   # Find the intersection row for each trajectory.
+  #NOTE: Each line in the backtrajectory files adds one hour to the trajectory.
   dplyr::mutate(
     cross_row = as.integer(
       intersect_trajectories(
@@ -337,8 +346,7 @@ stopifnot("Only one gas is currently supported!" = length(station_gasses) == 1)
 
 
 
-rlog::log_info("Estimating backtraj's GHG concentration at met stations...")
-
+rlog::log_info("Estimating GHG concentration at met stations...")
 
 
 backtrajectories_tb <-
@@ -353,6 +361,22 @@ backtrajectories_tb <-
       .y = cross_row,
       .f = function(data_df, n) {
         return(dplyr::slice_head(data_df, n = n))
+      }
+    )
+  ) %>%
+  # Build a date column from the trajectory data.
+  dplyr::mutate(
+    data_df = purrr::map(
+      .x = data_df,
+      .f = function(data_df) {
+        date_chr <- paste(
+          data_df[["year"]],
+          sprintf("%02d", as.integer(data_df[["month"]])),
+          sprintf("%02d", as.integer(data_df[["day"]])),
+          sep = "-"
+        )
+        data_df[["date"]] <- lubridate::as_date(date_chr)
+        return(data_df)
       }
     )
   ) %>%
@@ -390,11 +414,15 @@ backtrajectories_tb <-
   tidyr::unnest(ghg_stations) %>%
   # Add the trajectories missing limit interpolation back.
   dplyr::bind_rows(bt_missing_tb) %>%
+  # Add trajectory duration.
+  #NOTE: Each line in the backtrajectory files adds one hour to the trajectory.
+  dplyr::mutate(
+    time_to_stations = cross_row
+  ) %>%
   # Add trajectory and profile identifiers.
   dplyr::mutate(
     profile_id = stringr::str_c(site, lubridate::date(sample_date), sep = "_"),
     trajectory_id = stringr::str_c(profile_id, end_height, sep = "_"),
-    time_to_stations = cross_row
   )
 
 
@@ -570,25 +598,6 @@ pr_report_tb <-
   readr::write_csv(file = pr_report_fn)
 
 rlog::log_info(paste0("Report saved to:\n", pr_report_fn))
-
-
-
-rlog::log_info("Exporting flux report...")
-
-
-
-flux_report_tb <-
-  backtrajectories_tb %>%
-  dplyr::mutate(
-    file.vec = basename(file_path),
-    height = end_height,
-    year = lubridate::year(sample_date),
-    month = lubridate::month(sample_date),
-    day = lubridate::day(sample_date),
-    hour = lubridate::hour(sample_date),
-    minute = lubridate::minute(sample_date)
-  ) %>%
-  dplyr::select(file.vec, height, site, year, month, day, hour, minute)
 
 
 
@@ -1004,3 +1013,468 @@ rlog::log_info(
 )
 
 rlog::log_info("Finished!")
+
+
+###############################################################################
+# TODO: Fix the flux script and remove this code from here. 
+rlog::log_info("Building additional reports...")
+###############################################################################
+
+rawdata_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/rawdata"
+briefcase_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/briefcases"
+
+# Column for filtering valid observations in briefcase data.
+flag_colname <- "flag"
+
+
+
+rlog::log_info("Reading rawdata files...")
+
+
+
+rawdata_tb <-
+  rawdata_dir %>%
+  list.files(
+    full.names = TRUE,
+    recursive = FALSE,
+    include.dirs = FALSE
+  ) %>%
+  (function(x) {
+    stopifnot("No rawdata files found!" = length(x) > 0)
+    return(x)
+  }) %>%
+  dplyr::as_tibble() %>%
+  dplyr::rename(file_path = "value") %>%
+  dplyr::mutate(file_name = basename(file_path)) %>%
+  tidyr::separate(
+    col = file_name,
+    into = c(NA, "gas"),
+    sep = "[.]"
+  ) %>%
+  dplyr::mutate(
+    data_df = purrr::map(
+      .x = file_path,
+      .f = read_rawdata_file,
+      cnames = names(RAWDATA.COLNAMES),
+      ctypes = RAWDATA.COLNAMES,
+      skip = RAWDATA.SKIP
+    )
+  ) %>%
+  # Keep rows with valid flags.
+  dplyr::mutate(
+    data_df = purrr::map(
+      .x = data_df,
+      .f = function(x, flag_colname, keep_flags) {
+        return(x[x[[flag_colname]] %in% keep_flags, ])
+      },
+      flag_colname = flag_colname,
+      keep_flags = RAWDATA.VALID.FLAGS
+    )
+  ) %>%
+  # Remove duplicated rows.
+  dplyr::mutate(
+    data_df = purrr::map(
+      .x = data_df,
+      .f = dplyr::distinct
+    )
+  ) %>%
+  # Remove longitude & latitude outliers.
+  dplyr::mutate(
+    data_df = purrr::map(
+      .x = data_df,
+      .f = function(x, lon_colname, lat_colname) {
+        stopifnot("Longitude or latitude columns not found!" =
+                    all(c(lon_colname, lat_colname) %in% colnames(x)))
+        return(x[!(is_outlier(x[[lon_colname]]) |
+                     is_outlier(x[[lat_colname]])), ])
+      },
+      lon_colname = station_clon,
+      lat_colname = station_clat
+    )
+  ) %>%
+  # Build a date column from the rawdata.
+  dplyr::mutate(
+    data_df = purrr::map(
+      .x = data_df,
+      .f = function(data_df) {
+        date_chr <- paste(
+          data_df[["year"]],
+          sprintf("%02d", as.integer(data_df[["month"]])),
+          sprintf("%02d", as.integer(data_df[["day"]])),
+          sep = "-"
+        )
+        data_df[["date"]] <- lubridate::as_date(date_chr)
+        return(data_df)
+      }
+    )
+  ) %>%
+  # Build profile ids.
+  tidyr::unnest(data_df) %>%
+  dplyr::mutate(
+    profile_id = stringr::str_c(site, lubridate::date(date), sep = "_")
+  )
+
+
+
+rlog::log_info("Reading briefcase files...")
+
+
+
+briefcase_tb <-
+  briefcase_dir %>%
+  list.files(
+    full.names = TRUE,
+    recursive = FALSE,
+    include.dirs = FALSE
+  ) %>%
+  dplyr::as_tibble() %>%
+  dplyr::rename(file_path = "value") %>%
+  dplyr::mutate(file_name = basename(file_path)) %>%
+  dplyr::mutate(
+    data_df = purrr::map(
+      .x = file_path,
+      .f = read_briefcase_file,
+      cnames = names(BRIEFCASE.COLNAMES),
+      ctypes = BRIEFCASE.COLNAMES,
+      skip = BRIEFCASE.SKIP
+    )
+  ) %>%
+  tidyr::unnest(data_df) %>%
+  dplyr::mutate(
+    pid1 = stringr::str_sub(profile, start = 1L, end = 4L),
+    pid2 = stringr::str_sub(profile, start = 5L),
+    pid2 = stringr::str_replace_all(
+      string = pid2,
+      pattern = "_",
+      replacement = "-"
+    ),
+    profile_id = stringr::str_c(pid1, pid2, sep = "")
+  ) %>%
+  dplyr::select(-pid1, -pid2)
+
+
+
+rlog::log_info("Exporting flux report...")
+
+
+
+fx_report_tb <-
+  backtrajectories_tb %>%
+  dplyr::left_join(
+    y = rawdata_tb,
+    by = dplyr::join_by(
+      profile_id == profile_id,
+      end_height == height
+    ),
+    suffix = c("_bt", "_raw")
+  ) %>%
+  dplyr::left_join(
+    #NOTE: We only need briefcases' pressure!
+    y = dplyr::select(briefcase_tb, profile_id, planmts, "pressure (mbar)"),
+    by = dplyr::join_by(
+      profile_id == profile_id,
+      end_height == planmts
+    ),
+    suffix = c("_fx", "_bc")
+  ) %>%
+  dplyr::mutate(
+    file.vec = basename(file_path_bt),
+    year = lubridate::year(sample_date),
+    month = lubridate::month(sample_date),
+    day = lubridate::day(sample_date),
+    hour = lubridate::hour(sample_date),
+    minute = lubridate::minute(sample_date),
+    observed = NA,
+    outlier = NA,
+    V1 = NA,
+    V2 = NA,
+    syear = year,
+    smonth = month,
+    sday = day,
+    shour = hour,
+    smin = min,
+    V9 = NA,
+    slat = lat,
+    slon = lon,
+    sheight = fheight,
+    spressure = NA,
+    trajtime.days = time_to_stations / 24,
+  ) %>%
+  dplyr::select(
+    file.vec,
+    height = end_height,
+    site = site_bt,
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    flask,
+    observed = ghg_stations,
+    lat,
+    lon,
+    eventnumber,
+    profile = "profile_id",
+    interpolated = "ghg_con",
+    background = "ghg_con",
+    outlier,
+    V1,
+    V2,
+    syear,
+    smonth,
+    sday,
+    shour,
+    smin,
+    V9,
+    slat,
+    slon,
+    sheight,
+    spressure = "pressure (mbar)",
+    filerow = cross_row,
+    trajtime.days,
+    trajtime = bt_span
+  )
+
+rlog::log_info("Exporting flux report...")
+
+readr::write_csv(
+  x = fx_report_tb,
+  file = file.path(out_dir, paste0(station_gasses[1], "_bkgTable.csv"))
+)
+
+
+
+rlog::log_info("Finished!")
+
+# # Column for filtering valid observations in briefcase data.
+# flag_colname <- "flag"
+#
+# rawdata_tb <-
+#   rawdata_dir %>%
+#   list.files(
+#     full.names = TRUE,
+#     recursive = FALSE,
+#     include.dirs = FALSE
+#   ) %>%
+#   dplyr::as_tibble() %>%
+#   dplyr::rename(file_path = "value") %>%
+#   dplyr::mutate(file_name = basename(file_path)) %>%
+#   tidyr::separate(
+#     col = file_name,
+#     into = c(NA, "gas"),
+#     sep = "[.]"
+#   ) %>%
+#   dplyr::mutate(
+#     data_df = purrr::map(
+#       .x = file_path,
+#       .f = read_rawdata_file,
+#       cnames = names(RAWDATA.COLNAMES),
+#       ctypes = RAWDATA.COLNAMES,
+#       skip = RAWDATA.SKIP
+#     )
+#   ) %>%
+#   # Keep rows with valid flags.
+#   dplyr::mutate(
+#     data_df = purrr::map(
+#       .x = data_df,
+#       .f = function(x, flag_colname, keep_flags) {
+#         return(x[x[[flag_colname]] %in% keep_flags, ])
+#       },
+#       flag_colname = flag_colname,
+#       keep_flags = RAWDATA.VALID.FLAGS
+#     )
+#   ) %>%
+#   # Remove duplicated rows.
+#   dplyr::mutate(
+#     data_df = purrr::map(
+#       .x = data_df,
+#       .f = dplyr::distinct
+#     )
+#   ) %>%
+#   # Remove longitude & latitude outliers.
+#   dplyr::mutate(
+#     data_df = purrr::map(
+#       .x = data_df,
+#       .f = function(x, lon_colname, lat_colname) {
+#         stopifnot("Longitude or latitude columns not found!" =
+#                     all(c(lon_colname, lat_colname) %in% colnames(x)))
+#         return(x[!(is_outlier(x[[lon_colname]]) |
+#                      is_outlier(x[[lat_colname]])), ])
+#       },
+#       lon_colname = station_clon,
+#       lat_colname = station_clat
+#     )
+#   ) %>%
+#   # Build a date column from the rawdata.
+#   dplyr::mutate(
+#     data_df = purrr::map(
+#       .x = data_df,
+#       .f = function(data_df) {
+#         date_chr <- paste(
+#           data_df[["year"]],
+#           sprintf("%02d", as.integer(data_df[["month"]])),
+#           sprintf("%02d", as.integer(data_df[["day"]])),
+#           sep = "-"
+#         )
+#         data_df[["date"]] <- lubridate::as_date(date_chr)
+#         return(data_df)
+#       }
+#     )
+#   ) %>%
+#   # Build profile ids.
+#   tidyr::unnest(data_df) %>%
+#   dplyr::mutate(
+#     profile_id = stringr::str_c(site, lubridate::date(date), sep = "_")
+#   )
+#
+# fx_report_tb <-
+#   backtrajectories_tb %>%
+#   dplyr::left_join(
+#     y = rawdata_tb,
+#     by = dplyr::join_by(
+#       profile_id == profile_id,
+#       end_height == height
+#     ),
+#     suffix = c("_bt", "_raw")
+#   ) %>%
+#   dplyr::mutate(
+#     file.vec = basename(file_path_bt),
+#     year = lubridate::year(sample_date),
+#     month = lubridate::month(sample_date),
+#     day = lubridate::day(sample_date),
+#     hour = lubridate::hour(sample_date),
+#     minute = lubridate::minute(sample_date),
+#     observed = NA,
+#     # eventnumber = NA, #TODO
+#     outlier = NA,
+#     V1 = NA,
+#     V2 = NA,
+#     syear = year,
+#     smonth = month,
+#     sday = day,
+#     shour = hour,
+#     smin = min,
+#     V9 = NA,
+#     slat = lat,
+#     slon = lon,
+#     sheight = fheight,
+#     spressure = NA
+#   ) %>%
+#   dplyr::select(
+#     file.vec,
+#     height = end_height,
+#     site = site_bt,
+#     year,
+#     month,
+#     day,
+#     hour,
+#     minute,
+#     flask,
+#     observed = ghg_stations,
+#     lat,
+#     lon,
+#     eventnumber,
+#     profile = "profile_id",
+#     interpolated = "ghg_con",
+#     background = "ghg_con",
+#     outlier,
+#     V1,
+#     V2,
+#     syear,
+#     smonth,
+#     sday,
+#     shour,
+#     smin,
+#     V9,
+#     slat,
+#     slon,
+#     sheight,
+#     spressure,
+#     filerow = cross_row,
+#     trajtime.days = time_to_stations,
+#     trajtime = bt_span
+#   )
+#
+
+
+
+
+
+
+# rlog::log_info("Reading briefcases' data...")
+# briefcase_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/briefcases"
+# briefcase_tb <-
+#   briefcase_dir %>%
+#   list.files(
+#     full.names = TRUE,
+#     recursive = FALSE,
+#     include.dirs = FALSE
+#   ) %>%
+#   dplyr::as_tibble() %>%
+#   dplyr::rename(file_path = "value") %>%
+#   dplyr::mutate(
+#     file_name = basename(file_path),
+#     file_name = tools::file_path_sans_ext(file_name)
+#   ) %>%
+#   tidyr::separate(
+#     col = file_name,
+#     into = c("site", NA),
+#     sep = "_"
+#   ) %>%
+#   dplyr::mutate(
+#     data_df = purrr::map(
+#       .x = file_path,
+#       .f = read_briefcase_file,
+#       cnames = names(BRIEFCASE.COLNAMES),
+#       ctypes = BRIEFCASE.COLNAMES,
+#       skip = BRIEFCASE.SKIP
+#     )
+#   ) %>%
+#   tidyr::unnest(data_df) %>%
+#   # Add a matching profile id.
+#   dplyr::mutate(
+#     pid1 = stringr::str_sub(string = profile, start = 1L, end = 4L),
+#     pid2 = stringr::str_sub(string = profile, start = 5L, end = -1L),
+#     pid2 = stringr::str_replace_all(
+#       string = pid2,
+#       pattern = "_",
+#       replacement = "-"
+#     ),
+#     profile_id = stringr::str_c(pid1, pid2, sep = "")
+#   ) %>%
+#   dplyr::select(-pid1, -pid2)
+# rlog::log_info("Exporting flux report...")
+# flux_report_tb <-
+#   backtrajectories_tb %>%
+#   tidyr::unnest(data_df) %>%
+#   #TODO: Join breifcase data.
+#   dplyr::left_join(
+#     y = briefcase_tb,
+#     by = dplyr::join_by(
+#       profile_id == profile_id,
+#       end_height == planmts
+#     )
+#   )
+#
+
+###############################################################################
+# common_pids <- 
+# c("ALF_2011-01-24", "ALF_2011-03-01", "ALF_2011-03-25", "ALF_2011-04-16",
+# "ALF_2011-05-17", "ALF_2011-06-19", "ALF_2011-06-28", "ALF_2011-07-20",
+# "ALF_2011-07-30", "ALF_2011-08-23", "ALF_2011-08-31", "ALF_2011-09-17",
+# "ALF_2011-09-28", "ALF_2011-10-24", "ALF_2011-11-02", "ALF_2011-11-27",
+# "ALF_2011-12-18", "ALF_2011-12-30")
+#
+# #TODO: delete!
+# briefcase_tb <-
+#   briefcase_tb %>%
+#   filter(profile_id %in% common_pids)
+# backtrajectories_tb <-
+#   backtrajectories_tb %>%
+#   filter(profile_id %in% common_pids)
+# rawdata_tb <-
+#   rawdata_tb %>%
+#   filter(profile_id %in% common_pids)
+# ###############################################################################
+
+

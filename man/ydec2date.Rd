@@ -2,7 +2,7 @@
 % Please edit documentation in R/date.R
 \name{ydec2date}
 \alias{ydec2date}
-\title{Transform a decimal date to a date-format string}
+\title{Transform decimal-years to a date-format string}
 \usage{
 ydec2date(ydec)
 }
@@ -15,5 +15,5 @@ ydec2date(ydec)
 }\if{html}{\out{</div>}}
 }
 \description{
-Transform a decimal-year date into a date-format string
+Transform decimal-years to a date-format string
 }

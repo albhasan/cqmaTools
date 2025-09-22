@@ -3,14 +3,14 @@
 \docType{data}
 \name{BRIEFCASE.COLNAMES}
 \alias{BRIEFCASE.COLNAMES}
-\title{The name of the columns in the file resulting from analyzing gas samples.}
+\title{The name of the columns in the file resulting from processing briefcases' metadata.}
 \format{
-An object of class \code{character} of length 23.
+An object of class \code{character} of length 17.
 }
 \usage{
 BRIEFCASE.COLNAMES
 }
 \description{
-The name of the columns in the file resulting from analyzing gas samples.
+The name of the columns in the file resulting from processing briefcases' metadata.
 }
 \keyword{datasets}

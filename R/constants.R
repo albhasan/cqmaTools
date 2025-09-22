@@ -1,18 +1,67 @@
+#TODO: Document each column.
+
+#' The name of the columns in the file resulting from processing briefcases' metadata.
+#' @export
+BRIEFCASE.COLNAMES <- c(
+  "sample" = "integer",
+  "plan" = "integer", # Flight plan height
+  "start" = "integer",
+  "end" = "integer",
+  "min" = "integer",
+  "max" = "integer",
+  "mean" = "integer",
+  "temperature (C)" = "numeric",
+  "humidity (%RH)" = "numeric",
+  "pressure (mbar)" = "numeric",
+  "planmts" = "numeric",
+  "startmts" = "numeric",
+  "endmts" = "numeric",
+  "minmts" = "numeric",
+  "maxmts" = "numeric",
+  "meanmts" = "numeric",
+  "profile" = "character"
+)
+
+#' Number of lines to skip from a briefcase metadata file.
+#' @export
+BRIEFCASE.SKIP <- 0
+
 #' The name of the columns in the file resulting from analyzing gas samples.
 #' @export
-BRIEFCASE.COLNAMES <- c("site", "year", "month", "day", "hour", "min", "flask",
-                        "V8", "concentration", "flag", "V11", "ayear",
-                        "amonth", "aday", "ahour", "amin", "lat", "lon",
-                        "height", "eventnumber", "flat", "flon", "fheight")
+RAWDATA.COLNAMES <- c(
+  site = "character",
+  year = "integer", # Acquisition.
+  month = "integer",
+  day = "integer",
+  hour = "integer",
+  min = "integer",
+  flask = "character",
+  V8 = "character",
+  concentration = "double",
+  flag = "character",
+  wmo_code = "character", # Codigo utilizado pela WMO Equipamento usado para analisy (crhomatografo, analizador de CO.
+  ayear = "integer", # Dia do analyse
+  amonth = "integer",
+  aday = "integer",
+  ahour = "integer",
+  amin = "integer",
+  lat = "double",
+  lon = "double",
+  height = "double",
+  eventnumber = "character",
+  flat = "double",
+  flon = "double",
+  fheight = "double"
+)
 
-#' Flags for identifying valid observations in briefcase data. 
+#' Number of lines to skip from a rawdata file.
 #' @export
-BRIEFCASE.VALID.FLAGS <- c("...", "..>", "..<")
+RAWDATA.SKIP <- 0
 
-#' The name of the columns in the trajectory files produced by the Hysplit software.
+#' Flags for identifying valid observations in raw data. 
 #' @export
-HYSPLIT.COLNAMES <- c("V1", "V2", "year", "month", "day", "hour", "min",
-                      "V8", "V9", "lat", "lon", "height", "pressure")
+RAWDATA.VALID.FLAGS <- c("...", "..>", "..<")
+
 
 #' Pattern of trajectories' filenames.
 #'
@@ -101,3 +150,10 @@ YEAR.SEMESTERS <- c("s1", "s1", "s1", "s1", "s1", "s1",
 #' @export
 YEAR.YEAR      <- c("year", "year", "year", "year", "year", "year",
                     "year", "year", "year", "year", "year", "year")
+
+#TODO: Deprecated!
+#TODO: Document each column.
+#' The name of the columns in the trajectory files produced by the Hysplit software.
+#' @export
+HYSPLIT.COLNAMES <- c("V1", "V2", "year", "month", "day", "hour", "min",
+                      "V8", "V9", "lat", "lon", "height", "pressure")

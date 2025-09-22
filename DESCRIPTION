@@ -1,7 +1,7 @@
 Package: cqmaTools
 Type: Package
 Title: Tools for processing data at INPE's CQMA and LAGEE Laboratories
-Version: 0.4009
+Version: 0.4010
 Date: 2016-09-06
 Author: Alber Sanchez
 Maintainer: Alber Sanchez <albhasan@gmail.com>

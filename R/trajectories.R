@@ -386,30 +386,11 @@ read_trajectory_file <- function(file_path,
   if (all(data_df[["year"]] < 100))
     data_df["year"] <- data_df[["year"]] + 2000
 
-  data_df["date"] <-
-    paste(
-      data_df[["year"]],
-      sprintf("%02d", data_df[["month"]]),
-      sprintf("%02d", data_df[["day"]]),
-      sep = "-"
-    )
-
-  data_df["date"] <-
-    paste0(
-      data_df[["date"]],
-      " ",
-      sprintf("%02d", data_df[["hour"]]),
-      ":",
-      sprintf("%02d", data_df[["minute"]]),
-      ":00"
-    )
-
-  #NOTE: It fails when casting as.POSIXct("2010-10-17 00:00:00") and
-  #      as.POSIXct("2010-10-17 24:00:00"). The results have different format.
-  data_df["date"] <- lubridate::as_date(data_df[["date"]])
-
-  data_df[["year"]] <- data_df[["month"]] <- data_df[["day"]] <- NULL
-  data_df[["hour"]] <- data_df[["minute"]] <- NULL
+  # data_df["date"] <- build_date(
+  #   year = "year",
+  #   month = "month",
+  #   day = "day"
+  # )
 
   return(data_df)
 }
