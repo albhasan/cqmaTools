@@ -41,8 +41,7 @@ test_that("files2df works", {
 
   # List trajectory files.
   files <- list.files(
-    path = system.file("extdata", "trajectories", "2011",
-                       package = "cqmaTools"),
+    path = system.file("extdata", "backtrajectories", package = "cqmaTools"),
     pattern = "^[A-Z]{3}_[0-9]{4}_[0-9]{2}_[0-9]{2}_[0-9]+.[0-9]+",
     full.names = TRUE
   )
@@ -69,85 +68,86 @@ test_that("files2df works", {
 
 test_that("filter_data_frames works", {
 
-    # Create data frames, half with positive and half with negative numbers.
-    df_ls <- lapply(seq(sample.int(10, size = 1)), function(x) {
-        dims <- sample.int(10, size = 2)
-        data_df <- data.frame(matrix(rnorm(n = prod(dims)), nrow = dims[1]))
-        data_df <- abs(data_df)
-        if (x %% 2 == 1) {
-            data_df <- data_df * (-1)
-        }
-        colnames(data_df) <- paste0("X", seq(data_df))
-        return(data_df)
-    })
-    stopifnot("Expected numeric columns!" = all(
-        vapply(df_ls, function(x){
-            all(vapply(x, is.numeric, logical(1)))
-        }, logical(1))
-    ))
+  # Create data frames, half with positive and half with negative numbers.
+  df_ls <- lapply(seq(sample.int(10, size = 1)), function(x) {
+    dims <- sample.int(10, size = 2)
+    data_df <- data.frame(matrix(rnorm(n = prod(dims)), nrow = dims[1]))
+    data_df <- abs(data_df)
+    if (x %% 2 == 1) {
+      data_df <- data_df * (-1)
+    }
+    colnames(data_df) <- paste0("X", seq(data_df))
+    return(data_df)
+  })
+  stopifnot("Expected numeric columns!" = all(
+    vapply(df_ls, function(x) {
+      all(vapply(x, is.numeric, logical(1)))
+    },
+    logical(1))
+  ))
 
-    # Filter none.
-    r <- range(vapply(df_ls, range, numeric(2)))
-    filter_ls <- filter_data_frames(
-        x = df_ls,
-        cname = "X1",
-        min = r[1],
-        max = r[2]
-    )
-    expect_true(length(filter_ls) == length(df_ls))
-    filter_ls <- filter_data_frames(
-        x = df_ls,
-        cname = "X1",
-        min = -Inf,
-        max = Inf
-    )
-    expect_true(length(filter_ls) == length(df_ls))
+  # Filter none.
+  r <- range(vapply(df_ls, range, numeric(2)))
+  filter_ls <- filter_data_frames(
+    x = df_ls,
+    cname = "X1",
+    min = r[1],
+    max = r[2]
+  )
+  expect_true(length(filter_ls) == length(df_ls))
+  filter_ls <- filter_data_frames(
+    x = df_ls,
+    cname = "X1",
+    min = -Inf,
+    max = Inf
+  )
+  expect_true(length(filter_ls) == length(df_ls))
 
-    # Error: The given column doesn't exist.
-    expect_error(
-        filter_ls <- filter_data_frames(
-            x = df_ls, 
-            cname = paste(LETTERS, collapse = ""), 
-            min = 0, 
-            max = Inf
-        )
+  # Error: The given column doesn't exist.
+  expect_error(
+    filter_ls <- filter_data_frames(
+      x = df_ls,
+      cname = paste(LETTERS, collapse = ""),
+      min = 0,
+      max = Inf
     )
+  )
 
-    # Filter out the negative data frames.
-    # Approximately half of the data frames must be filtered out
-    filter_ls <- filter_data_frames(
-        x = df_ls,
-        cname = "X1",
-        min = 0,
-        max = Inf
-    )
-    expect_true(length(filter_ls) * 2 <= length(df_ls))
+  # Filter out the negative data frames.
+  # Approximately half of the data frames must be filtered out
+  filter_ls <- filter_data_frames(
+    x = df_ls,
+    cname = "X1",
+    min = 0,
+    max = Inf
+  )
+  expect_true(length(filter_ls) * 2 <= length(df_ls))
 
-    # Filter out the positive data frames.
-    # Approximately half of the data frames must be filtered out
-    filter_ls <- filter_data_frames(
-        x = df_ls,
-        cname = "X1",
-        min = -Inf,
-        max = 0
-    )
-    expect_true(length(filter_ls) * 2 <= (length(df_ls) + 2))
+  # Filter out the positive data frames.
+  # Approximately half of the data frames must be filtered out
+  filter_ls <- filter_data_frames(
+    x = df_ls,
+    cname = "X1",
+    min = -Inf,
+    max = 0
+  )
+  expect_true(length(filter_ls) * 2 <= (length(df_ls) + 2))
 
-    # Filter all.
-    filter_ls <- filter_data_frames(
-        x = df_ls,
-        cname = "X1",
-        min = 0,
-        max = 0
-    )
-    expect_true(length(filter_ls) == 0)
-    filter_ls <- filter_data_frames(
-        x = df_ls,
-        cname = "X1",
-        min = Inf,
-        max = -Inf 
-    )
-    expect_true(length(filter_ls) == 0)
+  # Filter all.
+  filter_ls <- filter_data_frames(
+    x = df_ls,
+    cname = "X1",
+    min = 0,
+    max = 0
+  )
+  expect_true(length(filter_ls) == 0)
+  filter_ls <- filter_data_frames(
+    x = df_ls,
+    cname = "X1",
+    min = Inf,
+    max = -Inf
+  )
+  expect_true(length(filter_ls) == 0)
 
 })
 

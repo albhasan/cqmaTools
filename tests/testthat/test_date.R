@@ -7,18 +7,3 @@ test_that("ydec2date works", {
   )
 
 })
-
-test_that("build_date works", {
-
-  d1 <- build_date(
-    year = "2010",
-    month = "10",
-    day = "17"
-  )
-
-  expect_equal(
-    object = d1,
-    expected = lubridate::as_date("2010-10-17")
-  )
-
-})

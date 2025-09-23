@@ -26,12 +26,6 @@ read_rawdata_file <- function(file_path,
     colClasses = ctypes
   )
 
-  # data_df["date"] <- build_date(
-  #   year = "year",
-  #   month = "month",
-  #   day = "day"
-  # )
-
   return(data_df)
 
 }

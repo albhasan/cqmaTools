@@ -1,7 +1,7 @@
 test_that("traj2lines works", {
 
   files <- list.files(
-    path = system.file("extdata", "trajectories", package = "cqmaTools"),
+    path = system.file("extdata", "backtrajectories", package = "cqmaTools"),
     pattern = "*",
     full.names = TRUE,
     recursive = TRUE
@@ -57,7 +57,7 @@ test_that("format_traj_names works", {
 test_that("get_trajectory_metadata works", {
 
   files <- list.files(
-    path = system.file("extdata", "trajectories", package = "cqmaTools"),
+    path = system.file("extdata", "backtrajectories", package = "cqmaTools"),
     pattern = TRAJECTORY.FILENAME.PATTERN,
     full.names = TRUE,
     recursive = TRUE
@@ -166,8 +166,7 @@ test_that("intersect_trajectories works", {
 test_that("filter_traj works", {
 
   files <- list.files(
-    path = system.file("extdata", "trajectories", package = "cqmaTools"),
-    # path = system.file("extdata", "hysplit_old", package = "cqmaTools"),
+    path = system.file("extdata", "backtrajectories", package = "cqmaTools"),
     pattern = "*",
     full.names = TRUE,
     recursive = TRUE
@@ -182,18 +181,6 @@ test_that("filter_traj works", {
     cnames = HYSPLIT.COLNAMES
   )
 
-  # expect_true(
-  #   all(sapply(df_ls, function(data_df) {
-  #     ft_row <- sort(sample(seq_along(data_df), size = 2))
-  #     res_df <- filter_traj(
-  #       traj = data_df,
-  #       from_row = ft_row[1],
-  #       to_row = ft_row[2]
-  #     )
-  #     return(nrow(res_df) == ft_row[2] - ft_row[1] + 1)
-  #   }))
-  # )
-
   # Test filter letting pass everything.
   expect_true(
     all(sapply(df_ls, function(data_df) {
@@ -201,7 +188,7 @@ test_that("filter_traj works", {
         traj = data_df,
         traj_min_lon = -Inf,
         traj_max_lon = Inf
-     )
+      )
       return(nrow(res_df) == nrow(data_df))
     }))
   )
