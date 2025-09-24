@@ -3,7 +3,8 @@
 \docType{data}
 \name{BRIEFCASE.COLNAMES}
 \alias{BRIEFCASE.COLNAMES}
-\title{The name of the columns in the file resulting from processing briefcases' metadata.}
+\title{The name of the columns in the file resulting from processing briefcases'
+metadata.}
 \format{
 An object of class \code{character} of length 17.
 }
@@ -11,6 +12,23 @@ An object of class \code{character} of length 17.
 BRIEFCASE.COLNAMES
 }
 \description{
-The name of the columns in the file resulting from processing briefcases' metadata.
+The name of the columns in the file resulting from processing briefcases'
+metadata.
+}
+\details{
+the column names and their meaning.
+\itemize{
+\item sample Sample number.
+\item plan,planmts Flight-plan height in feet and meters.
+\item start,startmts Height at the begining of the filght in feet and meters.
+\item end,endmts Height at the end of the fligth in feet and meters.
+\item min,minmts Mininum height during the flight in feet and meters.
+\item max,maxmts Maxinum height during the flight in feet and meters.
+\item mean,meanmts Mean flight height in feet and meters.
+\item temperature (C) Air temperature in celsius.
+\item humidity (\%RH) Percentage of relative humidity.
+\item pressure Pressure in milibars.
+\item profile Profile code.
+}
 }
 \keyword{datasets}

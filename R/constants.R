@@ -1,7 +1,22 @@
-#TODO: Document each column.
-
-#' The name of the columns in the file resulting from processing briefcases' metadata.
+#' The name of the columns in the file resulting from processing briefcases'
+#' metadata.
+#'
+#' @details the column names and their meaning.
+#' * sample Sample number.
+#' * plan,planmts Flight-plan height in feet and meters.
+#' * start,startmts Height at the begining of the filght in feet and meters.
+#' * end,endmts Height at the end of the fligth in feet and meters.
+#' * min,minmts Mininum height during the flight in feet and meters.
+#' * max,maxmts Maxinum height during the flight in feet and meters.
+#' * mean,meanmts Mean flight height in feet and meters.
+#' * temperature (C) Air temperature in celsius.
+#' * humidity (%RH) Percentage of relative humidity.
+#' * pressure Pressure in milibars.
+#' * profile Profile code.
+#' @md
+#'
 #' @export
+#'
 BRIEFCASE.COLNAMES <- c(
   "sample" = "integer",
   "plan" = "integer", # Flight plan height
@@ -27,7 +42,34 @@ BRIEFCASE.COLNAMES <- c(
 BRIEFCASE.SKIP <- 0
 
 #' The name of the columns in the file resulting from analyzing gas samples.
+#'
+#' @details the column names and their meaning.
+#' * site Name of the sample site.
+#' * year Year of sample acquisition.
+#' * month Month of sample acquisition.
+#' * day Day of sample acquisition.
+#' * hour Hour of sample acquisition.
+#' * min Minute of sample acquisition.
+#' * flask Sample's flask code.
+#' * V8 Unknown.
+#' * concentration Gas concentration.
+#' * flag Observation status. See \code{RAWDATA.VALID.FLAGS}.
+#' * wmo_code Equipment code provided by the World Metereological Organization.
+#' * ayear Year of sample analysis.
+#' * amonth Month of sample analysis.
+#' * aday Day of sample analysis.
+#' * amin Minute of sample analysis.
+#' * lat Sample latitude.
+#' * lon Sample longitude.
+#' * height Sample height.
+#' * eventnumber Unknown.
+#' * flat Unknown.
+#' * flon Unknown.
+#' * fheight Unknown.
+#' @md
+#'
 #' @export
+#'
 RAWDATA.COLNAMES <- c(
   site = "character",
   year = "integer", # Acquisition.
@@ -39,7 +81,7 @@ RAWDATA.COLNAMES <- c(
   V8 = "character",
   concentration = "double",
   flag = "character",
-  wmo_code = "character", # Codigo utilizado pela WMO Equipamento usado para analisy (crhomatografo, analizador de CO.
+  wmo_code = "character",
   ayear = "integer", # Dia do analyse
   amonth = "integer",
   aday = "integer",
@@ -80,20 +122,20 @@ TRAJECTORY.FILENAME.PATTERN <-
 #' in the simulation.
 #'
 #' @details the column names and their meaning.
-#' * parameter traj_number Trajectory number.
-#' * parameter grid_number Metereological grid number or antecedent trajectory
+#' * traj_number Trajectory number.
+#' * grid_number Metereological grid number or antecedent trajectory
 #' number.
-#' * parameter year Year of the point.
-#' * parameter month Month of the point.
-#' * parameter day Day of the point.
-#' * parameter hour Hour of the point.
-#' * parameter minute Minute of the point.
-#' * parameter forecast Forecast hour at point
-#' * parameter traj_age Age of the trajectory in hours.
-#' * parameter latitude Position latitude.
-#' * parameter longitude Position longitude.
-#' * parameter height Position height in meters above ground.
-#' * parameter pressure n diagnostic output variables; 1st to be output is
+#' * year Year of the point.
+#' * month Month of the point.
+#' * day Day of the point.
+#' * hour Hour of the point.
+#' * minute Minute of the point.
+#' * forecast Forecast hour at point
+#' * traj_age Age of the trajectory in hours.
+#' * latitude Position latitude.
+#' * longitude Position longitude.
+#' * height Position height in meters above ground.
+#' * pressure n diagnostic output variables; 1st to be output is
 #' always pressure.
 #' @md
 #'
@@ -120,6 +162,17 @@ TRAJECTORY.COLNAMES <- c(
 #' @description
 #' Description of metadata in the names of the trajectories' files. This is
 #' closely related to TRAJECTORY.FILENAME.PATTERN.
+#'
+#' @details the column names and their meaning.
+#' * traj_number Trajectory number.
+#' * grid_number Metereological grid number or antecedent trajectory
+#' number.
+#' * site Name of the sample site.
+#' * year Year of the point.
+#' * month Month of the point.
+#' * day Day of the point.
+#' * hour Hour of the point.
+#' @md
 #'
 #' @export
 #'
@@ -152,7 +205,6 @@ YEAR.YEAR      <- c("year", "year", "year", "year", "year", "year",
                     "year", "year", "year", "year", "year", "year")
 
 #TODO: Deprecated!
-#TODO: Document each column.
 #' The name of the columns in the trajectory files produced by the Hysplit software.
 #' @export
 HYSPLIT.COLNAMES <- c("V1", "V2", "year", "month", "day", "hour", "min",

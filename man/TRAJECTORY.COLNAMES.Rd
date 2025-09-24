@@ -18,20 +18,20 @@ in the simulation.
 \details{
 the column names and their meaning.
 \itemize{
-\item parameter traj_number Trajectory number.
-\item parameter grid_number Metereological grid number or antecedent trajectory
+\item traj_number Trajectory number.
+\item grid_number Metereological grid number or antecedent trajectory
 number.
-\item parameter year Year of the point.
-\item parameter month Month of the point.
-\item parameter day Day of the point.
-\item parameter hour Hour of the point.
-\item parameter minute Minute of the point.
-\item parameter forecast Forecast hour at point
-\item parameter traj_age Age of the trajectory in hours.
-\item parameter latitude Position latitude.
-\item parameter longitude Position longitude.
-\item parameter height Position height in meters above ground.
-\item parameter pressure n diagnostic output variables; 1st to be output is
+\item year Year of the point.
+\item month Month of the point.
+\item day Day of the point.
+\item hour Hour of the point.
+\item minute Minute of the point.
+\item forecast Forecast hour at point
+\item traj_age Age of the trajectory in hours.
+\item latitude Position latitude.
+\item longitude Position longitude.
+\item height Position height in meters above ground.
+\item pressure n diagnostic output variables; 1st to be output is
 always pressure.
 }
 }

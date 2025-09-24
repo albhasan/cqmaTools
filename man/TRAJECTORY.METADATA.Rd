@@ -14,4 +14,17 @@ TRAJECTORY.METADATA
 Description of metadata in the names of the trajectories' files. This is
 closely related to TRAJECTORY.FILENAME.PATTERN.
 }
+\details{
+the column names and their meaning.
+\itemize{
+\item traj_number Trajectory number.
+\item grid_number Metereological grid number or antecedent trajectory
+number.
+\item site Name of the sample site.
+\item year Year of the point.
+\item month Month of the point.
+\item day Day of the point.
+\item hour Hour of the point.
+}
+}
 \keyword{datasets}

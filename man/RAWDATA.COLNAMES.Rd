@@ -13,4 +13,31 @@ RAWDATA.COLNAMES
 \description{
 The name of the columns in the file resulting from analyzing gas samples.
 }
+\details{
+the column names and their meaning.
+\itemize{
+\item site Name of the sample site.
+\item year Year of sample acquisition.
+\item month Month of sample acquisition.
+\item day Day of sample acquisition.
+\item hour Hour of sample acquisition.
+\item min Minute of sample acquisition.
+\item flask Sample's flask code.
+\item V8 Unknown.
+\item concentration Gas concentration.
+\item flag Observation status. See \code{RAWDATA.VALID.FLAGS}.
+\item wmo_code Equipment code provided by the World Metereological Organization.
+\item ayear Year of sample analysis.
+\item amonth Month of sample analysis.
+\item aday Day of sample analysis.
+\item amin Minute of sample analysis.
+\item lat Sample latitude.
+\item lon Sample longitude.
+\item height Sample height.
+\item eventnumber Unknown.
+\item flat Unknown.
+\item flon Unknown.
+\item fheight Unknown.
+}
+}
 \keyword{datasets}
