@@ -45,7 +45,7 @@ rlog::log_info("Reading configuration...")
 
 
 station_location_file <- system.file("extdata", "station_location.csv",
-                                     package = "cqmaTools")
+                                     package = "cqmaTools", mustWork = TRUE)
 station_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/stations/data"
 hysplit_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/trajectories"
 out_dir <- "/home/alber/Downloads/tmp"
@@ -80,7 +80,8 @@ traj_cheight <- "height"
 
 # Vector data used to intersect the trajectories.
 limit_file <-
-  "/home/alber/Documents/github/cqmaTools/inst/extdata/limit/fake_limit.shp"
+  system.file("extdata", "limit", "limit_RPB-ASC-CPT.shp",
+              package = "cqmaTools", mustWork = TRUE)
 
 # Number of observations to take into account while interpolating missing
 # values.
@@ -112,7 +113,8 @@ rlog::log_info("Loading data...")
 
 
 stations_lonlat_tb <-
-  readr::read_csv(station_location_file, col_types = "cdd")
+  readr::read_csv(station_location_file, col_types = "cdd") %>%
+  dplyr::select(name = code, lon, lat)
 
 limit_sf <- sf::read_sf(dsn = limit_file)
 
@@ -224,7 +226,10 @@ stations_tb <-
     name = stringr::str_to_upper(name)
   ) %>%
   dplyr::select(-root) %>%
-  dplyr::full_join(y = stations_lonlat_tb, by = "name") %>%
+  dplyr::full_join(
+    y = stations_lonlat_tb,
+    by = "name"
+  ) %>%
   dplyr::arrange(station_clat) %>%
   dplyr::mutate(data_df = purrr::map(file_path, read_station_file)) %>%
   tidyr::unnest(data_df) %>%

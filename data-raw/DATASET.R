@@ -1,16 +1,55 @@
 library(dplyr)
 library(maps)
 library(purrr)
+library(readr)
 library(sf)
 
-sf::sf_use_s2(use_s2 = TRUE)
 
 devtools::load_all()
 
-# Spatial data.
 
+
+# Configuration
+
+backtrajectory_dir <-
+  "/home/alber/Documents/data/r_packages/cqmaTools/trajectories"
+briefcase_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/briefcases"
+rawdata_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/rawdata"
+out_dir <- "/home/alber/Documents/github/cqmaTools/inst/extdata"
+stopifnot(
+  "Directory not found!" =
+    all(dir.exists(c(backtrajectory_dir, briefcase_dir, rawdata_dir, out_dir)))
+)
+
+# Profile IDs.
+# NOTE: All of the profiles with data for backtrajectories, briefcases, and
+#       rawdata.
+# common_pids <- c(
+#   "ALF_2011-01-24", "ALF_2011-03-01", "ALF_2011-03-25", "ALF_2011-04-16",
+#   "ALF_2011-05-17", "ALF_2011-06-19", "ALF_2011-06-28", "ALF_2011-07-20",
+#   "ALF_2011-07-30", "ALF_2011-08-23", "ALF_2011-08-31", "ALF_2011-09-17",
+#   "ALF_2011-09-28", "ALF_2011-10-24", "ALF_2011-11-02", "ALF_2011-11-27",
+#   "ALF_2011-12-18", "ALF_2011-12-30"
+# )
+common_pids <- c(
+  "ALF_2011-01-24", "ALF_2011-03-01",  "ALF_2011-04-16",
+  "ALF_2011-05-17", "ALF_2011-06-19",  "ALF_2011-07-20",
+  "ALF_2011-08-23", "ALF_2011-09-17",
+  "ALF_2011-10-24", "ALF_2011-11-02",
+  "ALF_2011-12-18"
+)
+
+# Tolerance for reducing geometry complexity.
 tolerance_mts <- 10000
-#tolerance_deg <- (tolerance_mts / 6378137) * (180 / pi)
+
+sf::sf_use_s2(use_s2 = TRUE)
+
+station_file <- system.file("extdata", "station_location.csv",
+                            package = "cqmaTools", mustWork = TRUE)
+
+
+
+# Spatial data.
 
 countries_sf <- rnaturalearth::ne_countries(scale = "small")
 countries_sf <- countries_sf["name"]
@@ -34,34 +73,42 @@ states_sf <- sf::st_simplify(
 )
 stopifnot(sf::st_is_valid(states_sf))
 
-
 usethis::use_data(countries_sf, states_sf, overwrite = TRUE)
 
 
-# Backtrajectories, briefcases, rawdata.
 
-# NOTE: All of the profiles with data for backtrajectories, briefcases, and 
-#       rawdata.
-# common_pids <- c(
-#   "ALF_2011-01-24", "ALF_2011-03-01", "ALF_2011-03-25", "ALF_2011-04-16",
-#   "ALF_2011-05-17", "ALF_2011-06-19", "ALF_2011-06-28", "ALF_2011-07-20",
-#   "ALF_2011-07-30", "ALF_2011-08-23", "ALF_2011-08-31", "ALF_2011-09-17",
-#   "ALF_2011-09-28", "ALF_2011-10-24", "ALF_2011-11-02", "ALF_2011-11-27",
-#   "ALF_2011-12-18", "ALF_2011-12-30"
-# )
+# Backtrajectory interpolation line (limit).
 
-common_pids <- c(
-  "ALF_2011-01-24", "ALF_2011-03-01",  "ALF_2011-04-16",
-  "ALF_2011-05-17", "ALF_2011-06-19",  "ALF_2011-07-20",
-  "ALF_2011-08-23", "ALF_2011-09-17",
-  "ALF_2011-10-24", "ALF_2011-11-02",
-  "ALF_2011-12-18"
+station_sf <-
+  station_file %>%
+  readr::read_csv(col_types = "cddcc") %>%
+  sf::st_as_sf(
+    coords = c("lon", "lat"),
+    crs = st_crs(4326)
+  )
+
+limit_sfc <-
+  station_sf %>%
+  sf::st_coordinates() %>%
+  sf::st_linestring(dim = "XY") %>%
+  sf::st_sfc(crs = 4326)
+
+limit_sf <-
+  sf::st_sf(
+    name = paste(station_sf[["code"]], collapse = "-"),
+    geom = limit_sfc
+  )
+
+limit_file <- file.path(
+  out_dir,
+  "limit", 
+  paste0("limit_", paste(station_sf[["code"]], collapse = "-"), ".shp")
 )
 
-out_dir <- "/home/alber/Documents/github/cqmaTools/inst/extdata"
+sf::write_sf(obj = limit_sf, dsn = limit_file)
 
-backtrajectory_dir <-
-  "/home/alber/Documents/data/r_packages/cqmaTools/trajectories"
+
+# Backtrajectories, briefcases, rawdata.
 
 backtrajectory_tb <-
   backtrajectory_dir %>%
@@ -102,10 +149,6 @@ backtrajectory_tb <-
     stopifnot("Couldn't copy backtrajectory files!" = all(x[["cp_res"]]))
     return(x)
   })
-
-rawdata_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/rawdata"
-
-devtools::load_all()
 
 rawdata_tb <-
   rawdata_dir %>%
@@ -181,7 +224,6 @@ rawdata_tb <-
           quote = FALSE,
           sep = " ",
           dec = ".",
-          #col.names = FALSE,
           row.names = FALSE,
           col.names = FALSE
         )
@@ -189,8 +231,6 @@ rawdata_tb <-
       }
     )
   )
-
-briefcase_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/briefcases"
 
 briefcase_tb <-
   briefcase_dir %>%
@@ -211,8 +251,6 @@ briefcase_tb <-
       .f = utils::read.table,
       sep = " ",
       header = TRUE,
-      #col.names = names(BRIEFCASE.COLNAMES),
-      #colClasses = rep("character", times = length(BRIEFCASE.COLNAMES)),
       skip = BRIEFCASE.SKIP,
       tryLogical = FALSE,
       check.names = FALSE
@@ -254,7 +292,6 @@ briefcase_tb <-
           quote = TRUE,
           sep = " ",
           dec = ".",
-          #col.names = FALSE,
           row.names = TRUE,
           col.names = TRUE
         )

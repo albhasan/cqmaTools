@@ -1,4 +1,4 @@
-name,lon,lat
-RPB,-59.43,13.16499
-ASC,-14.4,-7.95957
-CPT,18.189,-34.35352
+code,lon,lat,name,url
+RPB,-59.43,13.16499,"Ragged Point, Barbados",https://gml.noaa.gov/dv/site/index.php?stacode=RPB
+ASC,-14.4,-7.95957,"Ascension Island, United Kingdom",https://gml.noaa.gov/dv/site/index.php?stacode=ASC
+CPT,18.189,-34.35352,"Cape Point, South Africa",https://gml.noaa.gov/dv/site/index.php?stacode=CPT
