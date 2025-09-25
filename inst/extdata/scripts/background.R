@@ -31,7 +31,7 @@ suppressPackageStartupMessages(library(rlog))
 suppressPackageStartupMessages(library(tidyr))
 suppressPackageStartupMessages(library(tools))
 
-#library(cqmaTools)
+library(cqmaTools)
 
 
 
@@ -49,6 +49,14 @@ station_location_file <- system.file("extdata", "station_location.csv",
 station_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/stations/data"
 hysplit_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/trajectories"
 out_dir <- "/home/alber/Downloads/tmp"
+###############################################################################
+rawdata_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/rawdata"
+briefcase_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/briefcases"
+stopifnot("Directory not found!" =
+          all(dir.exists(c(rawdata_dir, briefcase_dir))))
+# Column for filtering valid observations in briefcase data.
+flag_colname <- "flag"
+###############################################################################
 
 
 # Filter trajectories by coordinates.
@@ -1025,11 +1033,7 @@ rlog::log_info("Finished!")
 rlog::log_info("Building additional reports...")
 ###############################################################################
 
-rawdata_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/rawdata"
-briefcase_dir <- "/home/alber/Documents/data/r_packages/cqmaTools/briefcases"
 
-# Column for filtering valid observations in briefcase data.
-flag_colname <- "flag"
 
 
 
@@ -1132,6 +1136,10 @@ briefcase_tb <-
     recursive = FALSE,
     include.dirs = FALSE
   ) %>%
+  (function(x) {
+    stopifnot("No briefcase files found!" = length(x) > 0)
+    return(x)
+  }) %>%
   dplyr::as_tibble() %>%
   dplyr::rename(file_path = "value") %>%
   dplyr::mutate(file_name = basename(file_path)) %>%
@@ -1204,6 +1212,7 @@ fx_report_tb <-
     sheight = fheight,
     spressure = NA,
     trajtime.days = time_to_stations / 24,
+    trajtime = bt_span
   ) %>%
   dplyr::select(
     file.vec,
@@ -1237,7 +1246,7 @@ fx_report_tb <-
     spressure = "pressure (mbar)",
     filerow = cross_row,
     trajtime.days,
-    trajtime = bt_span
+    trajtime
   )
 
 rlog::log_info("Exporting flux report...")
