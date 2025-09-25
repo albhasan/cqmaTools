@@ -1212,7 +1212,7 @@ fx_report_tb <-
     sheight = fheight,
     spressure = NA,
     trajtime.days = time_to_stations / 24,
-    trajtime = bt_span
+    trajtime = time_to_stations / 24
   ) %>%
   dplyr::select(
     file.vec,
